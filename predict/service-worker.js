@@ -1,56 +1,67 @@
-const CACHE_NAME = 'tictactoe-prediction-cache-v1';
-// Daftar file inti yang diperlukan agar aplikasi dapat berjalan offline.
+// PERUBAHAN: Versi cache dinaikkan untuk memicu update.
+// Setiap kali Anda mengubah file ini atau file yang di-cache, naikkan versinya (v3, v4, dst).
+const CACHE_NAME = 'tictactoe-prediction-cache-v2';
 const urlsToCache = [
   '/',
   'app.html'
-  // Aset dari CDN seperti tailwind dan firebase akan ditangani oleh strategi network-first.
 ];
 
-// Event 'install': Dipicu saat service worker pertama kali diinstal.
+// Event 'install': Dipicu saat service worker baru terdeteksi.
 self.addEventListener('install', event => {
-  // Menunggu hingga proses caching aset inti selesai.
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Cache opened');
+        console.log('Service Worker: Caching new assets');
         return cache.addAll(urlsToCache);
       })
-  );
-});
-
-// Event 'fetch': Dipicu setiap kali aplikasi membuat permintaan jaringan (misalnya, meminta file, gambar, atau data).
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Jika permintaan ada di dalam cache, langsung kembalikan dari cache.
-        if (response) {
-          return response;
-        }
-
-        // Jika tidak ada di cache, coba ambil dari jaringan.
-        return fetch(event.request).catch(() => {
-            // Jika jaringan gagal (misalnya, offline), Anda bisa memberikan halaman fallback jika ada.
-            // Untuk saat ini, biarkan saja gagal agar browser menampilkan halaman error offline standar.
-        });
+      .then(() => {
+        // PERUBAHAN: Memaksa service worker yang sedang menunggu untuk menjadi aktif.
+        // Ini mempercepat proses update.
+        return self.skipWaiting();
       })
   );
 });
 
-// Event 'activate': Dipicu setelah service worker diinstal dan siap mengambil alih.
-// Ini adalah tempat yang baik untuk membersihkan cache lama.
+// Event 'fetch': Sekarang menggunakan strategi "Network falling back to Cache".
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    // 1. Coba ambil dari jaringan terlebih dahulu.
+    fetch(event.request)
+      .then(networkResponse => {
+        // Jika berhasil, kita simpan salinannya di cache untuk penggunaan offline nanti.
+        return caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, networkResponse.clone());
+          return networkResponse;
+        });
+      })
+      .catch(() => {
+        // 2. Jika jaringan gagal (offline), coba ambil dari cache.
+        return caches.match(event.request);
+      })
+  );
+});
+
+// Event 'activate': Membersihkan cache lama dan mengambil alih kontrol.
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // Hapus semua cache yang tidak ada dalam whitelist.
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Service Worker: Deleting old cache', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      // PERUBAHAN: Memberitahu service worker untuk segera mengontrol halaman.
+      return self.clients.claim();
+    }).then(() => {
+      // PERUBAHAN: Kirim pesan ke semua klien (tab) yang terbuka.
+      self.clients.matchAll().then(clients => {
+        clients.forEach(client => client.postMessage({ type: 'CACHE_UPDATED' }));
+      });
     })
   );
 });
