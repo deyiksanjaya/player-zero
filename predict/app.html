@@ -75,6 +75,10 @@
         #prediction-slide.peeking {
             opacity: 0.1;
         }
+        /* TAMBAHAN: Membuat gambar papan bisa di-klik */
+        #board-image {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="w-screen h-screen flex justify-center items-center">
@@ -93,6 +97,12 @@
                     <button id="mode-manual-btn" class="p-2 rounded-md transition-colors">Manual</button>
                 </div>
             </div>
+            <!-- TAMBAHAN: Input untuk nama shortcut -->
+            <div>
+                <label for="shortcut-name-input" class="font-medium">Nama Shortcut</label>
+                <input type="text" id="shortcut-name-input" placeholder="Contoh: Buka Kamera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+            </div>
+
             <div class="mt-6 flex justify-end">
                 <button id="save-settings-btn" class="px-5 py-2 bg-blue-600 font-semibold rounded-lg hover:bg-blue-700 transition-colors">Tutup</button>
             </div>
@@ -149,10 +159,12 @@
             saveSettingsBtn: document.getElementById('save-settings-btn'),
             modeOnlineBtn: document.getElementById('mode-online-btn'),
             modeManualBtn: document.getElementById('mode-manual-btn'),
+            shortcutNameInput: document.getElementById('shortcut-name-input'), // TAMBAHAN
         };
 
         let state = {
-            settings: { mode: 'online' },
+            // TAMBAHAN: Properti shortcutName di dalam settings
+            settings: { mode: 'online', shortcutName: '' },
             boardData: Array(9).fill(null),
             currentPlayer: 'X',
             gameFinished: false,
@@ -195,7 +207,6 @@
             dom.slideWrapper.style.transform = `translateX(-${totalTranslation}px)`;
         }
 
-        // PERBAIKAN: Fungsi ini sekarang HANYA menggambar di atas elemen <canvas>
         function drawOnCanvas(canvas, boardData) {
             const size = canvas.width;
             canvas.height = size;
@@ -227,7 +238,7 @@
             state.gameFinished = false;
             state.swipeGroup = null;
             dom.resultText.textContent = '';
-            dom.boardImage.src = ''; // Kosongkan sumber gambar
+            dom.boardImage.src = '';
             animateToSlide(0);
         }
 
@@ -246,13 +257,11 @@
                 state.gameFinished = true;
                 const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `permainan berakhir seri`;
                 dom.resultText.textContent = message;
-
-                // PERBAIKAN: Logika yang benar untuk membuat gambar
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = 512; // Resolusi tinggi
+                tempCanvas.width = 512;
                 tempCanvas.height = 512;
-                drawOnCanvas(tempCanvas, state.boardData); // Gambar di kanvas sementara
-                dom.boardImage.src = tempCanvas.toDataURL('image/png'); // Setel hasilnya ke <img>
+                drawOnCanvas(tempCanvas, state.boardData);
+                dom.boardImage.src = tempCanvas.toDataURL('image/png');
             } else {
                 state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
             }
@@ -261,7 +270,7 @@
         function startPeeking() {
             if (state.gameFinished || state.settings.mode !== 'manual') return;
             state.isPeeking = true;
-            drawOnCanvas(dom.peekCanvas, state.boardData); // Menggunakan fungsi gambar yang sama
+            drawOnCanvas(dom.peekCanvas, state.boardData);
             dom.predictionSlide.classList.add('peeking');
             dom.peekBoardContainer.classList.add('visible');
         }
@@ -279,16 +288,13 @@
             state.touchStart.x = touch.clientX;
             state.touchStart.y = touch.clientY;
             state.isDragging = false;
-            
             clearTimeout(state.peekTimer);
             state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
-
             if (state.gameFinished) {
                 dom.slideWrapper.style.transition = 'none';
                 const totalTranslation = (state.slideWidth * state.currentSlide) + (SLIDE_GAP * state.currentSlide);
                 state.initialTranslate = -totalTranslation;
             }
-            
             const now = Date.now();
             if (now - state.lastTapTime <= DOUBLE_TAP_TIMEOUT) {
                 handleDoubleTap();
@@ -302,9 +308,7 @@
             e.preventDefault();
             clearTimeout(state.peekTimer);
             if (state.isPeeking) stopPeeking();
-
             if (!state.gameFinished) return;
-            
             const currentX = e.touches[0].clientX;
             const diffX = currentX - state.touchStart.x;
             if (Math.abs(diffX) > 10) state.isDragging = true;
@@ -319,12 +323,10 @@
                 stopPeeking();
                 return;
             }
-
             const endX = e.changedTouches[0].clientX;
             const endY = e.changedTouches[0].clientY;
             const deltaX = endX - state.touchStart.x;
             const deltaY = endY - state.touchStart.y;
-
             if (state.gameFinished) {
                 if (state.isDragging) {
                     if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
@@ -344,7 +346,6 @@
             if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
             const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
             let direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
-
             if (!state.swipeGroup) {
                 if (direction === 'up') state.swipeGroup = 'row-top';
                 else if (direction === 'down') state.swipeGroup = 'row-bottom';
@@ -377,6 +378,32 @@
                 handlePostMove();
             }
         }
+
+        // TAMBAHAN: Fungsi untuk klik papan
+        function handleBoardClick() {
+            if (!state.gameFinished || !state.settings.shortcutName) {
+                return; // Abaikan jika game belum selesai atau shortcut belum diatur
+            }
+
+            const base64Data = dom.boardImage.src;
+
+            // Salin ke clipboard
+            const textArea = document.createElement('textarea');
+            textArea.value = base64Data;
+            textArea.style.position = 'fixed';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('Gagal menyalin ke clipboard:', err);
+            }
+            document.body.removeChild(textArea);
+
+            // Redirect ke Shortcut
+            window.location.href = `shortcuts://${state.settings.shortcutName}`;
+        }
         
         function toggleMode(newMode) {
             state.settings.mode = newMode;
@@ -388,6 +415,7 @@
             dom.modeOnlineBtn.classList.toggle('bg-gray-700', !isOnline);
             dom.modeManualBtn.classList.toggle('bg-blue-600', !isOnline);
             dom.modeManualBtn.classList.toggle('bg-gray-700', isOnline);
+            dom.shortcutNameInput.value = state.settings.shortcutName || '';
         }
         
         function initializeFirebaseListener() {
@@ -412,17 +440,26 @@
             stage.addEventListener('touchend', handleTouchEnd);
             window.addEventListener('resize', updateSlideDimensions);
             dom.settingsTrigger.addEventListener('click', () => dom.settingsPanel.classList.remove('hidden'));
+            
+            // PERBAIKAN: Menyimpan nama shortcut
             dom.saveSettingsBtn.addEventListener('click', () => {
+                state.settings.shortcutName = dom.shortcutNameInput.value.trim();
                 localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
                 dom.settingsPanel.classList.add('hidden');
             });
+
             dom.modeOnlineBtn.addEventListener('click', () => toggleMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleMode('manual'));
+            dom.boardImage.addEventListener('click', handleBoardClick); // TAMBAHAN
         }
 
         function loadSettings() {
             const savedSettings = localStorage.getItem('playerZeroSettings');
-            if (savedSettings) state.settings = JSON.parse(savedSettings);
+            if (savedSettings) {
+                // Pastikan settings lama digabung dengan default untuk properti baru
+                const defaultSettings = { mode: 'online', shortcutName: '' };
+                state.settings = { ...defaultSettings, ...JSON.parse(savedSettings) };
+            }
             toggleMode(state.settings.mode);
         }
 
