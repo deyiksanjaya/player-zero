@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ctrl Alt Defeat - Web-Based Games</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0d0c0f;
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .hero-bg {
+            background-image: linear-gradient(to bottom, rgba(13, 12, 15, 0.5), #0d0c0f), url('https://placehold.co/1920x1080/1a1a1a/2a2a2a?text=.');
+            background-size: cover;
+            background-position: center;
+        }
+        .game-card {
+            background-color: #1a181e;
+            border: 1px solid #2a282e;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            overflow: hidden;
+        }
+        .game-card:hover {
+            transform: translateY(-8px);
+            border-color: #8b5cf6;
+            box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.4);
+        }
+        .game-card-img-wrapper {
+            overflow: hidden;
+        }
+        .game-card:hover img {
+            transform: scale(1.05);
+        }
+        .btn-primary {
+            background-color: #8b5cf6;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 15px -5px rgba(139, 92, 246, 0.6);
+        }
+        .btn-primary:hover {
+            background-color: #7c3aed;
+            transform: translateY(-2px);
+        }
+        .text-glow {
+            text-shadow: 0 0 8px rgba(139, 92, 246, 0.8), 0 0 10px rgba(139, 92, 246, 0.6);
+        }
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background-color: #8b5cf6;
+            margin: 8px auto 0;
+            border-radius: 2px;
+        }
+        /* Custom scrollbar for a more "gamer" feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a181e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8b5cf6;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7c3aed;
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-black/30 backdrop-blur-lg border-b border-gray-800/50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="font-orbitron text-2xl font-bold tracking-widest text-white text-glow">
+                CTRL ALT DEFEAT
+            </a>
+            <nav class="hidden md:flex items-center space-x-8">
+                <a href="#games" class="hover:text-violet-400 transition-colors">Games</a>
+                <a href="#about" class="hover:text-violet-400 transition-colors">About</a>
+                <a href="#community" class="hover:text-violet-400 transition-colors">Community</a>
+            </nav>
+            <button class="md:hidden text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <main class="pt-20">
+        <section class="hero-bg h-[70vh] md:h-[80vh] flex items-center justify-center text-center">
+            <div class="container mx-auto px-6">
+                <h1 class="font-orbitron text-4xl md:text-7xl font-extrabold text-white text-glow uppercase tracking-wider">
+                    Your Next Obsession
+                </h1>
+                <p class="mt-4 md:text-xl max-w-2xl mx-auto text-gray-300">
+                    Discover a universe of simple, fun, and addictive web games. Ready to play in seconds.
+                </p>
+                <a href="#games" class="mt-8 inline-block btn-primary text-white font-bold py-3 px-8 rounded-full uppercase tracking-wider text-lg">
+                    Browse Games
+                </a>
+            </div>
+        </section>
+
+        <!-- Games Section -->
+        <section id="games" class="py-20 bg-[#110f14]">
+            <div class="container mx-auto px-6">
+                <h2 class="section-title text-center font-orbitron text-4xl font-bold text-white uppercase">Game Library</h2>
+                <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    
+                    <!-- Game Card 1 -->
+                    <div class="game-card rounded-lg">
+                        <div class="game-card-img-wrapper">
+                             <img src="./thumbnails/pixel-dash.jpg" alt="Pixel Dash Game" class="w-full h-48 object-cover transition-transform duration-300">
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-orbitron text-xl font-bold text-white">Pixel Dash</h3>
+                            <p class="mt-2 text-gray-400 text-sm">An infinite runner where every pixel counts. How far can you go?</p>
+                            <button class="w-full mt-4 btn-primary text-white font-semibold py-2 rounded-md">Play Now</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Game Card 2 -->
+                    <div class="game-card rounded-lg">
+                         <div class="game-card-img-wrapper">
+                             <img src="./thumbnails/glow-hockey.jpg" alt="Glow Hockey Game" class="w-full h-48 object-cover transition-transform duration-300">
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-orbitron text-xl font-bold text-white">Glow Hockey</h3>
+                            <p class="mt-2 text-gray-400 text-sm">Classic air hockey with a neon twist. Challenge your friends!</p>
+                            <button class="w-full mt-4 btn-primary text-white font-semibold py-2 rounded-md">Play Now</button>
+                        </div>
+                    </div>
+
+                    <!-- Game Card 3 -->
+                    <div class="game-card rounded-lg">
+                         <div class="game-card-img-wrapper">
+                             <img src="./thumbnails/code-breaker.jpg" alt="Code Breaker Game" class="w-full h-48 object-cover transition-transform duration-300">
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-orbitron text-xl font-bold text-white">Code Breaker</h3>
+                            <p class="mt-2 text-gray-400 text-sm">A challenging logic puzzle. Can you crack the secret code?</p>
+                            <button class="w-full mt-4 btn-primary text-white font-semibold py-2 rounded-md">Play Now</button>
+                        </div>
+                    </div>
+
+                    <!-- Game Card 4 (Tic-Tac-Toe) -->
+                    <div class="game-card rounded-lg">
+                         <div class="game-card-img-wrapper">
+                             <img src="./thumbnails/tic-tac-toe.jpg" alt="Tic-Tac-Toe Game" class="w-full h-48 object-cover transition-transform duration-300">
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-orbitron text-xl font-bold text-white">Tic-Tac-Toe</h3>
+                            <p class="mt-2 text-gray-400 text-sm">The classic game of X's and O's. Challenge a friend to a match.</p>
+                             <a href="tictactoe.html" class="block text-center w-full mt-4 btn-primary text-white font-semibold py-2 rounded-md">Play Now</a>
+                        </div>
+                    </div>
+
+                    <!-- Game Card 4 (Coming Soon) -->
+                    <div class="game-card rounded-lg opacity-60">
+                         <div class="game-card-img-wrapper">
+                             <img src="./thumbnails/astro-rogue.jpg" alt="Astro Rogue Game" class="w-full h-48 object-cover transition-transform duration-300">
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-orbitron text-xl font-bold text-white">Astro Rogue</h3>
+                            <p class="mt-2 text-gray-400 text-sm">Explore procedural galaxies in this top-down space shooter.</p>
+                             <button class="w-full mt-4 bg-gray-600 text-white font-semibold py-2 rounded-md cursor-not-allowed">Coming Soon</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black/50 border-t border-gray-800/50 py-8">
+        <div class="container mx-auto px-6 text-center text-gray-500">
+            <p class="font-orbitron text-lg font-bold">CTRL ALT DEFEAT</p>
+            <p class="mt-2 text-sm">&copy; 2025 Ctrl Alt Defeat. All rights reserved. A fun project by gamers, for gamers.</p>
+            <div class="mt-4 flex justify-center space-x-6">
+                <a href="#" class="hover:text-violet-400 transition-colors">Twitter</a>
+                <a href="#" class="hover:text-violet-400 transition-colors">Discord</a>
+                <a href="#" class="hover:text-violet-400 transition-colors">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
+
