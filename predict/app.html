@@ -1,901 +1,497 @@
 <!DOCTYPE html>
-
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <!-- Prevent user zooming -->
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
     <!-- Page title changed -->
-
     <title>Player Zero by Heri Sanjaya</title>
-
     <meta name="theme-color" content="#000000"/>
-
     <link rel="manifest" href="./manifest.json">
-
     <meta name="apple-mobile-web-app-capable" content="yes">
-
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <meta name="apple-mobile-web-app-title" content="Prediction">
-
     <link rel="apple-touch-icon" href="images/icons/icon-180x180.png">
-
     <script src="https://cdn.tailwindcss.com"></script>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
-
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-
     <style>
-
         /* Deep black background like a gallery */
-
         body { 
-
             font-family: 'Poppins', sans-serif; 
-
             -webkit-user-select: none; 
-
             -ms-user-select: none; 
-
             user-select: none; 
-
             overflow: hidden; 
-
             background-color: #000000; 
-
         }
-
         .main-container { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
-
         #board-image {
-
             width: 100vw;
-
             height: 100vw;
-
             /* Add max-height and max-width to handle landscape mode */
-
             max-width: 100vh;
-
             max-height: 100vh;
-
             background-color: #ffffff; /* Grid remains white */
-
             box-shadow: 0 4px 25px rgba(255,255,255,0.1);
-
             /* border-radius: 8px; Removed */
-
             cursor: pointer;
-
             -webkit-tap-highlight-color: transparent;
-
             transition: transform 0.15s ease-out;
-
         }
-
         #board-image:active {
-
             transform: scale(0.97);
-
         }
-
         #notification {
-
             transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-
         }
-
         /* Style for manual input grid */
-
         #manual-grid {
-
             display: grid;
-
             grid-template-columns: repeat(3, 80px);
-
             grid-template-rows: repeat(3, 80px);
-
             gap: 6px;
-
         }
-
         .manual-cell {
-
             display: flex;
-
             justify-content: center;
-
             align-items: center;
-
             width: 80px;
-
             height: 80px;
-
             background-color: rgba(255, 255, 255, 0.1);
-
             border: 1px solid rgba(255, 255, 255, 0.2);
-
             border-radius: 8px;
-
             font-size: 2.5em;
-
             color: #fff;
-
             cursor: pointer;
-
             transition: background-color 0.2s;
-
         }
-
         .manual-cell:active {
-
             background-color: rgba(255, 255, 255, 0.2);
-
         }
-
     </style>
-
 </head>
-
 <body class="flex items-center justify-center min-h-screen">
 
-
     <!-- Larger invisible area to open settings -->
-
     <div id="settings-trigger" class="absolute top-0 right-0 h-20 w-20 z-20"></div>
 
-
     <div id="settings-panel" class="hidden absolute inset-0 z-40 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-
         <div class="bg-gray-800 border border-gray-700 text-white rounded-xl shadow-lg w-full max-w-sm p-6 space-y-4">
-
             <h2 class="text-xl font-bold mb-4">Settings</h2>
-
             
-
             <div>
-
                 <label class="font-medium">Input Mode</label>
-
                 <div class="mt-2 grid grid-cols-2 gap-2">
-
                     <button id="mode-online-btn" class="p-2 rounded-md">Online</button>
-
                     <button id="mode-manual-btn" class="p-2 rounded-md">Manual</button>
-
                 </div>
-
             </div>
-
 
             <div id="manual-position-setting" class="hidden">
-
                 <label class="font-medium">Manual Grid Position</label>
-
                  <div class="mt-2 grid grid-cols-2 gap-2">
-
                     <button id="pos-left-btn" class="p-2 rounded-md">Left</button>
-
                     <button id="pos-right-btn" class="p-2 rounded-md">Right</button>
-
                 </div>
-
             </div>
-
 
             <div>
-
                 <label for="shortcut-name" class="font-medium">Shortcut Name</label>
-
                 <input type="text" id="shortcut-name" placeholder="Your Shortcut Name" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
-
             </div>
-
 
             <div class="mt-6 flex justify-end">
-
                 <button id="save-settings-btn" class="px-5 py-2 bg-blue-600 font-semibold rounded-lg hover:bg-blue-700">Close</button>
-
             </div>
-
         </div>
-
     </div>
-
     
-
     <div id="main-container" class="main-container">
-
         <img id="board-image" src="" alt="Game Board">
-
     </div>
-
 
     <!-- Container for manual input mode -->
-
     <div id="manual-input-container" class="hidden fixed inset-0 z-30 flex items-center p-6 text-white">
-
         <div id="manual-grid"></div>
-
         <div id="swipe-instruction" class="absolute bottom-10 left-1/2 -translate-x-1/2 text-gray-400 text-sm text-center"></div>
-
     </div>
-
 
     <div id="notification" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-gray-200 text-black px-6 py-3 rounded-full shadow-lg text-sm font-medium z-50"></div>
 
-
     <script type="module">
-
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
-
         
-
         const firebaseConfig = {
-
           apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
-
           authDomain: "player-zer0.firebaseapp.com",
-
-            databaseURL: "https://player-zer0-default-rtdb.asia-southeast1.firebasedatabase.app", 
-
+          databaseURL: "https://player-zer0-default-rtdb.asia-southeast1.firebasedatabase.app", 
           projectId: "player-zer0",
-
           storageBucket: "player-zer0.firebasestorage.app",
-
           messagingSenderId: "1009636905003",
-
           appId: "1:1009636905003:web:f3fafd5f5a693440769a6e"
-
         };
-
 
         const app = initializeApp(firebaseConfig);
-
         const db = getDatabase(app);
-
         let gameRef = ref(db, 'magic-game-state');
-
         let unsubscribeFirebase;
 
-
         const boardImage = document.getElementById('board-image');
-
         const mainContainer = document.getElementById('main-container');
-
         const settingsTrigger = document.getElementById('settings-trigger');
-
         const settingsPanel = document.getElementById('settings-panel');
-
         const saveSettingsBtn = document.getElementById('save-settings-btn');
-
         const shortcutNameInput = document.getElementById('shortcut-name');
-
         const notification = document.getElementById('notification');
-
         
-
         // Manual Mode Elements
-
         const manualInputContainer = document.getElementById('manual-input-container');
-
         const manualGrid = document.getElementById('manual-grid');
-
         const manualPositionSetting = document.getElementById('manual-position-setting');
-
         const modeOnlineBtn = document.getElementById('mode-online-btn');
-
         const modeManualBtn = document.getElementById('mode-manual-btn');
-
         const posLeftBtn = document.getElementById('pos-left-btn');
-
         const posRightBtn = document.getElementById('pos-right-btn');
-
         const swipeInstruction = document.getElementById('swipe-instruction');
 
-
-
         let settings = { 
-
             shortcutName: '', 
-
             imageFormat: 'square',
-
             mode: 'online',
-
             manualPos: 'left'
-
         };
 
-
         let latestBoardData = Array(9).fill(null);
-
         let manualBoardData = Array(9).fill(null);
-
         let manualCurrentPlayer = 'X';
-
         let manualMoveHistory = []; // To track undo steps
-
         const canvas = document.createElement('canvas');
 
-
         const winningCombinations = [
-
             [0, 1, 2], [3, 4, 5], [6, 7, 8],
-
             [0, 3, 6], [1, 4, 7], [2, 5, 8],
-
             [0, 4, 8], [2, 4, 6]
-
         ];
 
-
         // --- Swipe Detection Logic ---
-
         let touchStartX = 0, touchEndX = 0, touchStartY = 0, touchEndY = 0;
 
-
         document.addEventListener('touchstart', e => {
-
             if (settings.mode !== 'manual' || manualInputContainer.classList.contains('hidden')) return;
-
             touchStartX = e.changedTouches[0].screenX;
-
             touchStartY = e.changedTouches[0].screenY;
-
         }, { passive: true });
 
-
         document.addEventListener('touchend', e => {
-
             if (settings.mode !== 'manual' || manualInputContainer.classList.contains('hidden')) return;
-
             touchEndX = e.changedTouches[0].screenX;
-
             touchEndY = e.changedTouches[0].screenY;
-
             handleSwipe();
-
         });
-
 
         function handleSwipe() {
-
             const swipeThreshold = 50;
-
             const deltaX = touchEndX - touchStartX;
-
             const deltaY = touchEndY - touchStartY;
 
-
             // Prioritize vertical swipes
-
             if (Math.abs(deltaY) > Math.abs(deltaX) && deltaY > swipeThreshold) {
-
                 // Swipe Down to Undo
-
                 if (manualMoveHistory.length > 0) {
-
                     const lastMoveIndex = manualMoveHistory.pop();
-
                     manualBoardData[lastMoveIndex] = null;
-
                     manualCurrentPlayer = (manualCurrentPlayer === 'X') ? 'O' : 'X';
-
                     renderManualGrid();
-
                     showNotification('Last move undone.');
-
                 }
-
                 return; 
-
             }
-
             
-
             // Horizontal Swipe to Confirm
-
             let confirmed = false;
-
             if (settings.manualPos === 'left' && deltaX > swipeThreshold) {
-
                 confirmed = true;
-
             } else if (settings.manualPos === 'right' && deltaX < -swipeThreshold) {
-
                 confirmed = true;
-
             }
-
 
             if (confirmed) {
-
                 submitManualBoard('Manual board confirmed!');
-
             }
-
         }
-
 
         function checkWinner(board) {
-
             for (const combination of winningCombinations) {
-
                 const [a, b, c] = combination;
-
                 if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-
                     return board[a]; 
-
                 }
-
             }
-
             return null;
-
         }
-
 
         function isBoardFull(board) {
-
             return board.every(cell => cell !== null);
-
         }
-
         
-
         function renderDisplayBoard(boardData) {
-
             const ctx = canvas.getContext('2d');
-
             const size = 512;
-
             canvas.width = size;
-
             canvas.height = size;
-
             ctx.fillStyle = '#FFFFFF';
-
             ctx.fillRect(0, 0, size, size);
-
             const cellSize = size / 3;
-
             const lineThickness = 6;
-
             ctx.strokeStyle = '#CBD5E1';
-
             ctx.lineWidth = lineThickness;
-
             ctx.beginPath();
-
             for (let i = 1; i < 3; i++) {
-
                 ctx.moveTo(i * cellSize, 0); ctx.lineTo(i * cellSize, size);
-
                 ctx.moveTo(0, i * cellSize); ctx.lineTo(size, i * cellSize);
-
             }
-
             ctx.stroke();
-
             ctx.font = `bold ${cellSize * 0.7}px Poppins`;
-
             ctx.textAlign = 'center';
-
             ctx.textBaseline = 'middle';
-
             boardData.forEach((value, index) => {
-
                 if (!value) return;
-
                 const row = Math.floor(index / 3); const col = index % 3;
-
                 const x = col * cellSize + cellSize / 2;
-
                 const y = row * cellSize + cellSize / 2;
-
                 ctx.fillStyle = value === 'X' ? '#EF4444' : '#3B82F6';
-
                 ctx.fillText(value, x, y);
-
             });
-
             boardImage.src = canvas.toDataURL('image/png');
-
         }
-
         
-
         function generateOutputImageOnCanvas(boardData) {
-
             const ctx = canvas.getContext('2d');
-
             const size = 512;
-
             canvas.width = size; canvas.height = size;
-
             ctx.fillStyle = '#FFFFFF';
-
             ctx.fillRect(0, 0, size, size);
-
             const startX = 0, startY = 0;
-
             const cellSize = size / 3;
-
             const lineThickness = 6;
-
             ctx.strokeStyle = '#CBD5E1';
-
             ctx.lineWidth = lineThickness;
-
             ctx.beginPath();
-
             for (let i = 1; i < 3; i++) {
-
                 ctx.moveTo(startX + i * cellSize, startY);
-
                 ctx.lineTo(startX + i * cellSize, startY + size);
-
                 ctx.moveTo(startX, startY + i * cellSize);
-
                 ctx.lineTo(startX + size, startY + i * cellSize);
-
             }
-
             ctx.stroke();
-
             ctx.font = `bold ${cellSize * 0.7}px Poppins`;
-
             ctx.textAlign = 'center';
-
             ctx.textBaseline = 'middle';
-
             boardData.forEach((value, index) => {
-
                 if (!value) return;
-
                 const row = Math.floor(index / 3); const col = index % 3;
-
                 const x = startX + col * cellSize + cellSize / 2;
-
                 const y = startY + row * cellSize + cellSize / 2;
-
                 ctx.fillStyle = value === 'X' ? '#EF4444' : '#3B82F6';
-
                 ctx.fillText(value, x, y);
-
             });
-
         }
-
         
-
         function submitManualBoard(message) {
-
             latestBoardData = [...manualBoardData];
-
             renderDisplayBoard(latestBoardData);
-
             
-
             mainContainer.classList.remove('hidden');
-
             manualInputContainer.classList.add('hidden');
-
             
-
             showNotification(message);
-
         }
-
 
         function renderManualGrid() {
-
             manualGrid.innerHTML = '';
-
             for (let i = 0; i < 9; i++) {
-
                 const cell = document.createElement('div');
-
                 cell.classList.add('manual-cell');
-
                 cell.textContent = manualBoardData[i] || '';
-
                 cell.addEventListener('click', () => {
-
                     if (manualBoardData[i] !== null) return;
-
                     
-
                     manualMoveHistory.push(i);
-
                     manualBoardData[i] = manualCurrentPlayer;
-
                     cell.textContent = manualCurrentPlayer;
-
                     
-
                     const winner = checkWinner(manualBoardData);
-
                     const boardIsFull = isBoardFull(manualBoardData);
 
-
                     if (winner || boardIsFull) {
-
                         const message = winner ? `Winner is ${winner}! Board confirmed.` : 'Board is full! Board confirmed.';
-
                         submitManualBoard(message);
-
                         return;
-
                     }
-
 
                     manualCurrentPlayer = (manualCurrentPlayer === 'X') ? 'O' : 'X';
-
                 });
-
                 manualGrid.appendChild(cell);
-
             }
-
         }
-
 
         function toggleMode(newMode) {
-
             settings.mode = newMode;
-
             if (newMode === 'online') {
-
                 mainContainer.classList.remove('hidden');
-
                 manualInputContainer.classList.add('hidden');
-
                 initializeFirebaseListener();
-
             } else { // manual
-
                 mainContainer.classList.add('hidden');
-
                 manualInputContainer.classList.remove('hidden');
-
                 manualBoardData = Array(9).fill(null);
-
                 manualMoveHistory = [];
-
                 manualCurrentPlayer = 'X';
-
                 renderManualGrid();
-
                 if (unsubscribeFirebase) {
-
                     unsubscribeFirebase();
-
                     unsubscribeFirebase = null;
-
                 }
-
             }
-
             updateSettingsUI();
-
         }
-
 
         function updateSettingsUI() {
-
             modeOnlineBtn.style.backgroundColor = settings.mode === 'online' ? '#3b82f6' : 'rgba(255,255,255,0.1)';
-
             modeManualBtn.style.backgroundColor = settings.mode === 'manual' ? '#3b82f6' : 'rgba(255,255,255,0.1)';
-
             
-
             posLeftBtn.style.backgroundColor = settings.manualPos === 'left' ? '#3b82f6' : 'rgba(255,255,255,0.1)';
-
             posRightBtn.style.backgroundColor = settings.manualPos === 'right' ? '#3b82f6' : 'rgba(255,255,255,0.1)';
-
             
-
             manualPositionSetting.style.display = settings.mode === 'manual' ? 'block' : 'none';
-
             
-
             manualInputContainer.style.justifyContent = settings.manualPos === 'left' ? 'flex-start' : 'flex-end';
 
-
             let instructionText = settings.manualPos === 'left' ? 'Swipe right: Confirm' : 'Swipe left: Confirm';
-
             instructionText += '<br>Swipe down: Undo';
-
             swipeInstruction.innerHTML = instructionText;
-
         }
-
 
         function showNotification(message) {
-
             notification.textContent = message;
-
             notification.classList.remove('hidden', 'opacity-0', 'translate-y-4');
-
             notification.classList.add('opacity-100', 'translate-y-0');
-
             setTimeout(() => {
-
                 notification.classList.add('opacity-0', 'translate-y-4');
-
                 setTimeout(() => notification.classList.add('hidden'), 300);
-
             }, 2500);
-
         }
-
 
         async function handleBoardTap() {
-
-             if (!settings.shortcutName) {
-
+            if (!settings.shortcutName) {
                 showNotification('Please set a Shortcut Name.');
-
                 setTimeout(() => { settingsTrigger.click(); shortcutNameInput.focus(); }, 500);
-
                 return;
-
             }
-
             try {
-
+                // Buat board 512x512 piksel di kanvas global
                 generateOutputImageOnCanvas(latestBoardData);
-
-                const dataUrl = canvas.toDataURL('image/png');
-
-                await navigator.clipboard.writeText(dataUrl);
-
-                showNotification('Image copied successfully!');
-
-                setTimeout(() => {
-
-                    try {
-
-                        const encodedShortcutName = encodeURIComponent(settings.shortcutName);
-
-                        const shortcutUrl = `shortcuts://run-shortcut?name=${encodedShortcutName}`;
-
-                        window.location.href = shortcutUrl;
-
-                    } catch (shortcutError) { showNotification('Failed to run shortcut.'); }
-
-                }, 500);
-
-            } catch (err) { showNotification('Failed to copy image.'); }
-
-        }
-
+                const boardCanvas = canvas;
         
-
-        function saveSettings() {
-
-            settings.shortcutName = shortcutNameInput.value.trim();
-
-            localStorage.setItem('appSettings', JSON.stringify(settings));
-
-            settingsPanel.classList.add('hidden');
-
-            toggleMode(settings.mode);
-
+                // Buat kanvas baru untuk gambar output akhir (420x910)
+                const outputCanvas = document.createElement('canvas');
+                const ctxOutput = outputCanvas.getContext('2d');
+                outputCanvas.width = 420;
+                outputCanvas.height = 910;
+        
+                // Atur latar belakang kanvas baru menjadi putih
+                ctxOutput.fillStyle = '#FFFFFF';
+                ctxOutput.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+        
+                // Hitung posisi tengah untuk board
+                const boardWidth = boardCanvas.width;
+                const boardHeight = boardCanvas.height;
+                const xPos = (outputCanvas.width - boardWidth) / 2;
+                const yPos = (outputCanvas.height - boardHeight) / 2;
+        
+                // Gambarkan board ke kanvas output pada posisi tengah
+                ctxOutput.drawImage(boardCanvas, xPos, yPos);
+        
+                // Dapatkan URL data Base64 dari kanvas output
+                const dataUrl = outputCanvas.toDataURL('image/png');
+                
+                await navigator.clipboard.writeText(dataUrl);
+                showNotification('Image copied successfully!');
+                
+                // Panggil Shortcut
+                setTimeout(() => {
+                    try {
+                        const encodedShortcutName = encodeURIComponent(settings.shortcutName);
+                        const shortcutUrl = `shortcuts://run-shortcut?name=${encodedShortcutName}`;
+                        window.location.href = shortcutUrl;
+                    } catch (shortcutError) { 
+                        showNotification('Failed to run shortcut.'); 
+                    }
+                }, 500);
+            } catch (err) { 
+                showNotification('Failed to copy image.'); 
+            }
         }
-
+        
+        function saveSettings() {
+            settings.shortcutName = shortcutNameInput.value.trim();
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            settingsPanel.classList.add('hidden');
+            toggleMode(settings.mode);
+        }
 
         function loadSettings() {
-
             const savedSettings = JSON.parse(localStorage.getItem('appSettings'));
-
             if (savedSettings) {
-
                 settings = { ...settings, ...savedSettings };
-
             }
-
             shortcutNameInput.value = settings.shortcutName;
-
             toggleMode(settings.mode);
-
         }
-
 
         function initializeFirebaseListener() {
-
             if (unsubscribeFirebase) unsubscribeFirebase();
-
             if (settings.mode !== 'online') return;
 
-
             unsubscribeFirebase = onValue(gameRef, (snapshot) => {
-
                 const finalBoard = Array(9).fill(null);
-
                 if (snapshot.exists()) {
-
                     const gameState = snapshot.val();
-
                     if (gameState && gameState.board) {
-
                         const receivedBoardData = gameState.board;
-
                         for (const index in receivedBoardData) {
-
                             const value = receivedBoardData[index];
-
                             const indexNum = parseInt(index, 10);
-
                             if (!isNaN(indexNum) && indexNum >= 0 && indexNum < 9) {
-
                                 finalBoard[indexNum] = value;
-
                             }
-
                         }
-
                     }
-
                 }
-
                 latestBoardData = [...finalBoard];
-
                 renderDisplayBoard(finalBoard);
-
             });
-
         }
 
-
         // --- Event Listeners ---
-
         settingsTrigger.addEventListener('click', () => {
-
             updateSettingsUI();
-
             settingsPanel.classList.remove('hidden');
-
         });
-
         saveSettingsBtn.addEventListener('click', saveSettings);
-
         
-
         modeOnlineBtn.addEventListener('click', () => { settings.mode = 'online'; updateSettingsUI(); });
-
         modeManualBtn.addEventListener('click', () => { settings.mode = 'manual'; updateSettingsUI(); });
-
         posLeftBtn.addEventListener('click', () => { settings.manualPos = 'left'; updateSettingsUI(); });
-
         posRightBtn.addEventListener('click', () => { settings.manualPos = 'right'; updateSettingsUI(); });
 
-
         boardImage.addEventListener('click', handleBoardTap);
-
         
-
         loadSettings();
-
     </script>
-
     <script> if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./service-worker.js'); }); } </script>
-
 </body>
-
 </html>
-
