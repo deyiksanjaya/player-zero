@@ -1,9 +1,10 @@
-// PERUBAHAN: Versi cache dinaikkan untuk memicu update.
-// Setiap kali Anda mengubah file ini atau file yang di-cache, naikkan versinya (v3, v4, dst).
-const CACHE_NAME = 'tictactoe-prediction-cache-v2';
+// Setiap kali Anda mengubah file aplikasi, naikkan versi cache ini.
+const CACHE_NAME = 'player-zero-cache-v3';
+// Daftar file inti agar aplikasi bisa jalan offline.
+// 'index.html' adalah nama file utama Anda. Sesuaikan jika perlu.
 const urlsToCache = [
   '/',
-  'app.html'
+  'app.html' 
 ];
 
 // Event 'install': Dipicu saat service worker baru terdeteksi.
@@ -11,31 +12,34 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching new assets');
+        console.log('Service Worker: Menyimpan aset baru ke cache');
         return cache.addAll(urlsToCache);
       })
       .then(() => {
-        // PERUBAHAN: Memaksa service worker yang sedang menunggu untuk menjadi aktif.
-        // Ini mempercepat proses update.
+        // Memaksa service worker baru untuk aktif segera.
         return self.skipWaiting();
       })
   );
 });
 
-// Event 'fetch': Sekarang menggunakan strategi "Network falling back to Cache".
+// Event 'fetch': Menggunakan strategi "Network Coba Dulu, Kalau Gagal Baru Cache".
 self.addEventListener('fetch', event => {
+  // Hanya proses permintaan GET
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   event.respondWith(
-    // 1. Coba ambil dari jaringan terlebih dahulu.
     fetch(event.request)
       .then(networkResponse => {
-        // Jika berhasil, kita simpan salinannya di cache untuk penggunaan offline nanti.
+        // Jika berhasil, simpan salinan di cache untuk penggunaan offline.
         return caches.open(CACHE_NAME).then(cache => {
           cache.put(event.request, networkResponse.clone());
           return networkResponse;
         });
       })
       .catch(() => {
-        // 2. Jika jaringan gagal (offline), coba ambil dari cache.
+        // Jika jaringan gagal, coba ambil dari cache.
         return caches.match(event.request);
       })
   );
@@ -49,16 +53,16 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Service Worker: Deleting old cache', cacheName);
+            console.log('Service Worker: Menghapus cache lama', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     }).then(() => {
-      // PERUBAHAN: Memberitahu service worker untuk segera mengontrol halaman.
+      // Memberitahu service worker untuk segera mengontrol halaman.
       return self.clients.claim();
     }).then(() => {
-      // PERUBAHAN: Kirim pesan ke semua klien (tab) yang terbuka.
+      // Kirim pesan ke semua tab yang terbuka bahwa update telah selesai.
       self.clients.matchAll().then(clients => {
         clients.forEach(client => client.postMessage({ type: 'CACHE_UPDATED' }));
       });
