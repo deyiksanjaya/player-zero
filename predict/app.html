@@ -383,17 +383,18 @@
     const base64Data = dom.boardImage.src;
     if (!base64Data) return;
 
-    // copy ke clipboard pakai API modern
     navigator.clipboard.writeText(base64Data)
         .then(() => {
             console.log("Board image copied to clipboard");
             if (state.settings.shortcutName) {
-                window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
+                // BERI JEDA 100 MILIDETIK SEBELUM PINDAH
+                setTimeout(() => {
+                    window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
+                }, 100);
             }
         })
         .catch(err => {
             console.error("Clipboard gagal:", err);
-            // fallback lama kalau browser nggak support
             const textArea = document.createElement('textarea');
             textArea.value = base64Data;
             document.body.appendChild(textArea);
@@ -401,7 +402,10 @@
             document.execCommand('copy');
             document.body.removeChild(textArea);
             if (state.settings.shortcutName) {
-                window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
+                // BERI JEDA 100 MILIDETIK SEBELUM PINDAH
+                setTimeout(() => {
+                    window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
+                }, 100);
             }
         });
 }
