@@ -1,7 +1,7 @@
 // Setiap kali Anda mengubah file aplikasi, naikkan versi cache ini.
 const CACHE_NAME = 'player-zero-cache-v3';
 // Daftar file inti agar aplikasi bisa jalan offline.
-// 'index.html' adalah nama file utama Anda. Sesuaikan jika perlu.
+// Sesuaikan nama file utama Anda di sini.
 const urlsToCache = [
   '/',
   'app.html' 
