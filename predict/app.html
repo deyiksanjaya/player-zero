@@ -92,7 +92,7 @@
         <div class="bg-gray-800 border border-gray-700 text-white rounded-xl shadow-lg w-full max-w-sm p-6 space-y-4">
             <div class="flex justify-between items-center">
                  <h2 class="text-xl font-bold">Pengaturan</h2>
-                 <button id="close-settings-btn" aria-label="Tutup Pengaturan" class="text-gray-400 hover:text-white">&times;</button>
+                 <button id="close-settings-btn" aria-label="Tutup Pengaturan" class="text-gray-400 hover:text-white text-3xl">&times;</button>
             </div>
             <div>
                 <label class="font-medium">Mode Input</label>
@@ -318,7 +318,6 @@
             const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
             const direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
 
-            // Peta gestur yang jauh lebih bersih, andal, dan mudah dibaca
             const gestureMap = {
                 'col-left': { 'up': 0, 'middle': 3, 'down': 6 },
                 'col-right': { 'up': 2, 'middle': 5, 'down': 8 },
@@ -335,10 +334,10 @@
                 let cellIndex = -1;
                 let secondDirection = 'middle';
 
-                if (state.swipeGroup.startsWith('col')) { // Swipe pertama vertikal
+                if (state.swipeGroup.startsWith('col')) {
                     if (direction === 'up') secondDirection = 'up';
                     else if (direction === 'down') secondDirection = 'down';
-                } else { // Swipe pertama horizontal
+                } else {
                     if (direction === 'left') secondDirection = 'left';
                     else if (direction === 'right') secondDirection = 'right';
                 }
@@ -350,24 +349,37 @@
                     handlePostMove();
                 }
                 
-                state.swipeGroup = null; // Reset setelah gestur kedua
+                state.swipeGroup = null;
             }
         }
 
-        // --- UPGRADE: Fungsi Salin Gambar Asli (bukan Teks) ---
-        async function copyImageToClipboard(imageElement) {
-            const imageUrl = imageElement.src;
-            if (!imageUrl || !imageUrl.startsWith('data:image/png')) {
-                console.error("Sumber gambar tidak valid untuk disalin.");
-                return;
+        // --- DIKEMBALIKAN: Fungsi Salin Teks Base64 ---
+        async function copyBase64ToClipboard(imageElement) {
+            const base64Data = imageElement.src;
+            if (!base64Data || !base64Data.startsWith('data:image/png')) {
+                console.error("Data gambar tidak valid untuk disalin.");
+                return false;
             }
             try {
-                const response = await fetch(imageUrl);
-                const blob = await response.blob();
-                await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
-                console.log("Gambar berhasil disalin ke clipboard!");
+                await navigator.clipboard.writeText(base64Data);
+                console.log("Teks Base64 berhasil disalin!");
+                return true;
             } catch (err) {
-                console.error("Gagal menyalin gambar ke clipboard:", err);
+                console.warn("Metode salin modern gagal, mencoba fallback:", err);
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = base64Data;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return successful;
+                } catch (fallbackErr) {
+                    console.error("Fallback copy juga gagal:", fallbackErr);
+                    return false;
+                }
             }
         }
         
@@ -426,7 +438,7 @@
                     } else {
                         animateToSlide(state.currentSlide);
                     }
-                } else if (e.target === dom.boardImage) { // Jika ini 'tap', bukan 'drag'
+                } else if (e.target === dom.boardImage) {
                     await handleBoardClick();
                 }
             } else if (state.settings.mode === 'manual' && !state.isDragging) {
@@ -446,8 +458,8 @@
         
         async function handleBoardClick() {
             if (!state.gameFinished) return;
-            await copyImageToClipboard(dom.boardImage);
-            if (state.settings.shortcutName) {
+            const isSuccess = await copyBase64ToClipboard(dom.boardImage);
+            if (isSuccess && state.settings.shortcutName) {
                 setTimeout(() => {
                     window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.shortcutName)}`;
                 }, 100);
@@ -537,8 +549,6 @@
             stage.addEventListener('touchstart', handleTouchStart, { passive: false });
             stage.addEventListener('touchmove', handleTouchMove, { passive: false });
             stage.addEventListener('touchend', handleTouchEnd);
-
-            // UPGRADE: Debounce pada resize untuk performa lebih baik
             window.addEventListener('resize', debounce(updateSlideDimensions, 250));
             
             dom.settingsTrigger.addEventListener('click', openSettings);
@@ -548,7 +558,6 @@
             dom.modeOnlineBtn.addEventListener('click', () => toggleMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleMode('manual'));
 
-            // UPGRADE: Tutup pengaturan dengan tombol Escape
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') closeSettings();
             });
@@ -559,8 +568,8 @@
             loadSettings();
             setupEventListeners();
             updateSlideDimensions();
-            registerServiceWorker(); // Mendaftarkan service worker saat aplikasi dimulai
-            listenForServiceWorkerUpdates(); // Mendengarkan pesan dari service worker
+            registerServiceWorker();
+            listenForServiceWorkerUpdates();
         }
 
         init();
