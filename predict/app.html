@@ -19,7 +19,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
 
     <style>
-        /* CSS tetap sama, sudah cukup baik */
         html, body {
             overscroll-behavior: none;
             position: fixed;
@@ -35,29 +34,36 @@
             color: #ffffff;
             -webkit-tap-highlight-color: transparent;
         }
+        
+        /* --- PERBAIKAN LAYOUT --- */
+        /* Mengadopsi gaya dari contoh 'Atma' */
         #slider-stage {
-            width: 100vmin;
-            height: 100vmin;
-            overflow: hidden;
             position: relative;
+            width: 100vw; /* Mengisi lebar layar */
+            height: 100vw; /* Membuat rasio 1:1 */
+            max-height: 100vh; /* Memastikan tidak lebih tinggi dari layar */
+            box-sizing: border-box;
+            overflow: hidden;
         }
         #slide-wrapper {
-            display: flex;
             height: 100%;
-            gap: 20px;
+            display: flex;
+            gap: 20px; /* Jarak antar slide */
         }
         .slide-container {
-            flex-shrink: 0;
-            width: 100%;
             height: 100%;
+            width: 100vw; /* Setiap slide mengisi lebar layar */
+            flex-shrink: 0; /* Mencegah slide menyusut */
+            box-sizing: border-box;
             background-color: white;
             color: black;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0;
             transition: opacity 0.2s ease-in-out;
         }
+        /* --- AKHIR PERBAIKAN --- */
+
         #peek-board-container {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -221,11 +227,19 @@
         // --- Fungsi Inti Aplikasi ---
 
         function updateSlideDimensions() {
+            // Lebar slide sekarang didasarkan pada #slider-stage yang sudah 100vw
             state.slideWidth = dom.sliderStage.getBoundingClientRect().width;
-            const slides = document.querySelectorAll('.slide-container');
-            slides.forEach(slide => { slide.style.width = `${state.slideWidth}px`; });
+            
+            // Javascript akan mengatur lebar individual slide agar sesuai
+            const slides = dom.slideWrapper.querySelectorAll('.slide-container');
+            slides.forEach(slide => { 
+                // Kita tetap set width di JS agar kalkulasi transform X akurat
+                // Style CSS 'width: 100vw' memastikan tampilan awal benar
+                slide.style.width = `${state.slideWidth}px`;
+            });
+            
             dom.peekCanvas.width = state.slideWidth;
-            dom.peekCanvas.height = state.slideWidth;
+            dom.peekCanvas.height = state.slideWidth; // Tinggi canvas mengikuti lebar
             animateToSlide(state.currentSlide, 0);
         }
 
@@ -311,20 +325,16 @@
             dom.peekBoardContainer.classList.remove(CLASS_NAMES.VISIBLE);
         }
 
-        // --- UPGRADE: Logika Gesture Manual yang Lebih Andal ---
         function handleManualGesture(deltaX, deltaY) {
             if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
-
             const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
             const direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
-
             const gestureMap = {
                 'col-left': { 'up': 0, 'middle': 3, 'down': 6 },
                 'col-right': { 'up': 2, 'middle': 5, 'down': 8 },
                 'row-top': { 'left': 0, 'middle': 1, 'right': 2 },
                 'row-bottom': { 'left': 6, 'middle': 7, 'right': 8 }
             };
-
             if (!state.swipeGroup) {
                 if (direction === 'up') state.swipeGroup = 'row-top';
                 else if (direction === 'down') state.swipeGroup = 'row-bottom';
@@ -333,7 +343,6 @@
             } else {
                 let cellIndex = -1;
                 let secondDirection = 'middle';
-
                 if (state.swipeGroup.startsWith('col')) {
                     if (direction === 'up') secondDirection = 'up';
                     else if (direction === 'down') secondDirection = 'down';
@@ -341,19 +350,15 @@
                     if (direction === 'left') secondDirection = 'left';
                     else if (direction === 'right') secondDirection = 'right';
                 }
-
                 cellIndex = gestureMap[state.swipeGroup]?.[secondDirection];
-
                 if (cellIndex !== undefined && state.boardData[cellIndex] === null) {
                     state.boardData[cellIndex] = state.currentPlayer;
                     handlePostMove();
                 }
-                
                 state.swipeGroup = null;
             }
         }
 
-        // --- DIKEMBALIKAN: Fungsi Salin Teks Base64 ---
         async function copyBase64ToClipboard(imageElement) {
             const base64Data = imageElement.src;
             if (!base64Data || !base64Data.startsWith('data:image/png')) {
