@@ -34,7 +34,6 @@
             color: #ffffff;
             -webkit-tap-highlight-color: transparent;
         }
-        /* PERBAIKAN: Panggung sekarang menggunakan vmin untuk menjadi persegi yang selalu pas dan terpusat */
         #slider-stage {
             width: 100vmin;
             height: 100vmin;
@@ -118,6 +117,7 @@
               <h2 id="result-text" class="px-8"></h2>
           </div>
           <div class="slide-container">
+              <!-- PERBAIKAN: Atribut src="" dihapus untuk stabilitas -->
               <img id="board-image" alt="Papan Permainan Akhir" class="w-full h-full object-contain">
           </div>
       </div>
@@ -186,7 +186,6 @@
         }
 
         function updateSlideDimensions() {
-            // PERBAIKAN: Hanya membaca lebar dari panggung yang ukurannya sudah diatur oleh CSS
             state.slideWidth = dom.sliderStage.getBoundingClientRect().width;
             
             const slides = document.querySelectorAll('.slide-container');
@@ -326,6 +325,7 @@
             const endY = e.changedTouches[0].clientY;
             const deltaX = endX - state.touchStart.x;
             const deltaY = endY - state.touchStart.y;
+            
             if (state.gameFinished) {
                 if (state.isDragging) {
                     if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
@@ -334,6 +334,10 @@
                     } else {
                         animateToSlide(state.currentSlide);
                     }
+                } 
+                // PERBAIKAN: Cek jika target sentuhan adalah gambar papan dan ini adalah tap (bukan drag)
+                else if (e.target === dom.boardImage) {
+                    handleBoardClick();
                 }
             } else if (state.settings.mode === 'manual' && !state.isDragging) {
                 handleManualGesture(deltaX, deltaY);
@@ -379,36 +383,48 @@
         }
 
         function handleBoardClick() {
-    if (!state.gameFinished) return;
-    const base64Data = dom.boardImage.src;
-    if (!base64Data) return;
+            // Fungsi ini sekarang dipanggil dari handleTouchEnd
+            if (!state.gameFinished) return;
+            const base64Data = dom.boardImage.src;
+            // Pengecekan sederhana untuk memastikan src bukan string kosong atau URL halaman
+            if (!base64Data || !base64Data.startsWith('data:image/png')) {
+                console.error("Data gambar tidak valid untuk disalin.");
+                return;
+            }
 
-    navigator.clipboard.writeText(base64Data)
-        .then(() => {
-            console.log("Board image copied to clipboard");
-            if (state.settings.shortcutName) {
-                // BERI JEDA 100 MILIDETIK SEBELUM PINDAH
-                setTimeout(() => {
-                    window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
-                }, 100);
-            }
-        })
-        .catch(err => {
-            console.error("Clipboard gagal:", err);
-            const textArea = document.createElement('textarea');
-            textArea.value = base64Data;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            if (state.settings.shortcutName) {
-                // BERI JEDA 100 MILIDETIK SEBELUM PINDAH
-                setTimeout(() => {
-                    window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
-                }, 100);
-            }
-        });
-}
+            navigator.clipboard.writeText(base64Data)
+                .then(() => {
+                    console.log("Board image copied to clipboard");
+                    if (state.settings.shortcutName) {
+                        setTimeout(() => {
+                           window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.shortcutName)}`;
+                        }, 100);
+                    }
+                })
+                .catch(err => {
+                    console.error("Clipboard API gagal, mencoba fallback:", err);
+                    // Fallback untuk browser/konteks lama
+                    try {
+                        const textArea = document.createElement('textarea');
+                        textArea.value = base64Data;
+                        textArea.style.position = 'fixed'; // Hindari scroll jump
+                        textArea.style.opacity = '0';
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        const successful = document.execCommand('copy');
+                        console.log('Fallback copy successful:', successful);
+                        document.body.removeChild(textArea);
+
+                        if (successful && state.settings.shortcutName) {
+                            setTimeout(() => {
+                                window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.shortcutName)}`;
+                            }, 100);
+                        }
+                    } catch (fallbackErr) {
+                        console.error("Fallback copy juga gagal:", fallbackErr);
+                    }
+                });
+        }
         
         function toggleMode(newMode) {
             state.settings.mode = newMode;
@@ -452,7 +468,7 @@
             });
             dom.modeOnlineBtn.addEventListener('click', () => toggleMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleMode('manual'));
-            dom.boardImage.addEventListener('click', handleBoardClick);
+            // PERBAIKAN: Event listener 'click' pada boardImage dihapus karena tidak efektif.
         }
 
         function loadSettings() {
