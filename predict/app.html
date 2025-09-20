@@ -81,7 +81,7 @@
 <body class="flex items-center justify-center h-screen">
 
     <!-- Larger invisible area to open settings -->
-    <div id="settings-trigger" class="absolute top-0 right-0 h-20 w-20 z-20"></div>
+    <div id="settings-trigger" class="absolute top-0 right-0 h-20 w-20 z-50"></div>
 
     <div id="settings-panel" class="hidden absolute inset-0 z-40 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-gray-800 border border-gray-700 text-white rounded-xl shadow-lg w-full max-w-sm p-6 space-y-4">
@@ -182,12 +182,14 @@
         let touchStartX = 0, touchEndX = 0, touchStartY = 0, touchEndY = 0;
 
         document.addEventListener('touchstart', e => {
+            if (settingsPanel && !settingsPanel.classList.contains('hidden')) return; // Always let settings open
             if (settings.mode !== 'manual' || manualInputContainer.classList.contains('hidden')) return;
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
         }, { passive: true });
 
         document.addEventListener('touchend', e => {
+            if (settingsPanel && !settingsPanel.classList.contains('hidden')) return; // Always let settings open
             if (settings.mode !== 'manual' || manualInputContainer.classList.contains('hidden')) return;
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
@@ -272,21 +274,25 @@
         
         function generateOutputImageOnCanvas(boardData) {
             const ctx = canvas.getContext('2d');
-            const size = 512;
-            canvas.width = size; canvas.height = size;
+            const canvasWidth = 420;
+            const canvasHeight = 910;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, size, size);
-            const startX = 0, startY = 0;
-            const cellSize = size / 3;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            const boardSize = Math.min(canvasWidth, canvasHeight) * 0.9;
+            const startX = (canvasWidth - boardSize) / 2;
+            const startY = (canvasHeight - boardSize) / 2;
+            const cellSize = boardSize / 3;
             const lineThickness = 6;
             ctx.strokeStyle = '#CBD5E1';
             ctx.lineWidth = lineThickness;
             ctx.beginPath();
             for (let i = 1; i < 3; i++) {
                 ctx.moveTo(startX + i * cellSize, startY);
-                ctx.lineTo(startX + i * cellSize, startY + size);
+                ctx.lineTo(startX + i * cellSize, startY + boardSize);
                 ctx.moveTo(startX, startY + i * cellSize);
-                ctx.lineTo(startX + size, startY + i * cellSize);
+                ctx.lineTo(startX + boardSize, startY + i * cellSize);
             }
             ctx.stroke();
             ctx.font = `bold ${cellSize * 0.7}px Poppins`;
