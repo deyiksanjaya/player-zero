@@ -34,11 +34,10 @@
             color: #ffffff;
             -webkit-tap-highlight-color: transparent;
         }
+        /* PERBAIKAN: Panggung sekarang menggunakan vmin untuk menjadi persegi yang selalu pas dan terpusat */
         #slider-stage {
-            width: 100vw;
-            height: 100vw;
-            max-height: 100vh;
-            max-width: 100vw;
+            width: 100vmin;
+            height: 100vmin;
             overflow: hidden;
             position: relative;
         }
@@ -187,11 +186,14 @@
         }
 
         function updateSlideDimensions() {
+            // PERBAIKAN: Hanya membaca lebar dari panggung yang ukurannya sudah diatur oleh CSS
             state.slideWidth = dom.sliderStage.getBoundingClientRect().width;
+            
             const slides = document.querySelectorAll('.slide-container');
             slides.forEach(slide => {
                 slide.style.width = `${state.slideWidth}px`;
             });
+
             dom.peekCanvas.width = state.slideWidth;
             dom.peekCanvas.height = state.slideWidth;
             animateToSlide(state.currentSlide, 0);
@@ -377,9 +379,7 @@
         }
 
         function handleBoardClick() {
-            if (!state.gameFinished || !state.settings.shortcutName) {
-                return;
-            }
+            if (!state.gameFinished || !state.settings.shortcutName) return;
             const base64Data = dom.boardImage.src;
             const textArea = document.createElement('textarea');
             textArea.value = base64Data;
@@ -393,7 +393,9 @@
                 console.error('Gagal menyalin ke clipboard:', err);
             }
             document.body.removeChild(textArea);
-            window.location.href = `shortcuts://${state.settings.shortcutName}`;
+            
+            // PERBAIKAN: Menggunakan encodeURIComponent untuk memastikan URL valid
+            window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
         }
         
         function toggleMode(newMode) {
@@ -452,26 +454,5 @@
 
         init();
     </script>
-
-    <!-- TAMBAHAN: Kode untuk Pendaftaran & Update Service Worker -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./service-worker.js')
-          .then(registration => {
-            console.log('Service Worker terdaftar dengan scope:', registration.scope);
-          }).catch(error => {
-            console.log('Pendaftaran Service Worker gagal:', error);
-          });
-
-        navigator.serviceWorker.addEventListener('message', event => {
-          if (event.data && event.data.type === 'CACHE_UPDATED') {
-            if (confirm('Versi baru aplikasi tersedia. Muat ulang sekarang?')) {
-              window.location.reload();
-            }
-          }
-        });
-      }
-    </script>
-
 </body>
 </html>
