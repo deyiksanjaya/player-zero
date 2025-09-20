@@ -1,7 +1,7 @@
 {
   "name": "Player Zero by Heri Sanjaya",
   "short_name": "Player Zero",
-  "start_url": ".",
+  "start_url": "./app.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
