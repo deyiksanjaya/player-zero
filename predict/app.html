@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Player Zero by Heri Sanjaya</title>
-    
+
     <!-- Meta Tags PWA -->
     <meta name="theme-color" content="#000000"/>
     <link rel="manifest" href="./manifest.json">
@@ -12,23 +12,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Prediction">
     <link rel="apple-touch-icon" href="images/icons/icon-180x180.png">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <style>
+        /* CSS tetap sama, sudah cukup baik */
         html, body {
             overscroll-behavior: none;
             position: fixed;
             width: 100%;
             height: 100%;
         }
-        body { 
-            font-family: 'Poppins', sans-serif; 
+        body {
+            font-family: 'Poppins', sans-serif;
             -webkit-user-select: none;
-            user-select: none; 
+            user-select: none;
             overflow: hidden;
             background-color: #000000;
             color: #ffffff;
@@ -54,7 +55,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0; 
+            border-radius: 0;
             transition: opacity 0.2s ease-in-out;
         }
         #peek-board-container {
@@ -63,7 +64,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            pointer-events: none; 
+            pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
         }
@@ -76,35 +77,41 @@
         #board-image {
             cursor: pointer;
         }
+        #update-notification {
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="w-screen h-screen flex justify-center items-center">
 
-    <!-- Trigger Pengaturan -->
+    <!-- Trigger Pengaturan (Tetap tidak terlihat untuk metode sulap) -->
     <div id="settings-trigger" class="absolute top-0 right-0 h-20 w-20 z-50 cursor-pointer"></div>
 
     <!-- Panel Pengaturan (Modal) -->
     <div id="settings-panel" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-gray-800 border border-gray-700 text-white rounded-xl shadow-lg w-full max-w-sm p-6 space-y-4">
-            <h2 class="text-xl font-bold mb-4">Pengaturan</h2>
+            <div class="flex justify-between items-center">
+                 <h2 class="text-xl font-bold">Pengaturan</h2>
+                 <button id="close-settings-btn" aria-label="Tutup Pengaturan" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
             <div>
                 <label class="font-medium">Mode Input</label>
                 <div class="mt-2 grid grid-cols-2 gap-2">
-                    <button id="mode-online-btn" class="p-2 rounded-md transition-colors">Online</button>
-                    <button id="mode-manual-btn" class="p-2 rounded-md transition-colors">Manual</button>
+                    <button id="mode-online-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Online">Online</button>
+                    <button id="mode-manual-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Manual">Manual</button>
                 </div>
             </div>
             <div>
-                <label for="shortcut-name-input" class="font-medium">Nama Shortcut</label>
+                <label for="shortcut-name-input" class="font-medium">Nama Shortcut (iOS)</label>
                 <input type="text" id="shortcut-name-input" placeholder="Contoh: Buka Kamera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div class="mt-6 flex justify-end">
-                <button id="save-settings-btn" class="px-5 py-2 bg-blue-600 font-semibold rounded-lg hover:bg-blue-700 transition-colors">Tutup</button>
+                <button id="save-settings-btn" class="px-5 py-2 bg-blue-600 font-semibold rounded-lg hover:bg-blue-700 transition-colors">Simpan & Tutup</button>
             </div>
         </div>
     </div>
-    
+
     <main id="slider-stage">
       <div id="peek-board-container">
           <canvas id="peek-canvas"></canvas>
@@ -117,32 +124,48 @@
               <h2 id="result-text" class="px-8"></h2>
           </div>
           <div class="slide-container">
-              <!-- PERBAIKAN: Atribut src="" dihapus untuk stabilitas -->
               <img id="board-image" alt="Papan Permainan Akhir" class="w-full h-full object-contain">
           </div>
       </div>
     </main>
 
+    <!-- Notifikasi Update PWA -->
+    <div id="update-notification" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg">
+        Aplikasi diperbarui. Siap digunakan offline.
+    </div>
+
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-        
+
+        // --- Konfigurasi Firebase ---
+        // Untuk pemakaian pribadi, konfigurasi di sisi klien seperti ini tidak masalah.
         const firebaseConfig = {
-          apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
-          authDomain: "player-zer0.firebaseapp.com",
-          databaseURL: "https://player-zer0-default-rtdb.asia-southeast1.firebasedatabase.app", 
-          projectId: "player-zer0",
-          storageBucket: "player-zer0.firebasestorage.app",
-          messagingSenderId: "1009636905003",
-          appId: "1:1009636905003:web:f3fafd5f5a693440769a6e"
+            apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
+            authDomain: "player-zer0.firebaseapp.com",
+            databaseURL: "https://player-zer0-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "player-zer0",
+            storageBucket: "player-zer0.appspot.com",
+            messagingSenderId: "1009636905003",
+            appId: "1:1009636905003:web:f3fafd5f5a693440769a6e"
         };
 
+        // --- Konstanta ---
         const WINNING_COMBINATIONS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
         const SWIPE_THRESHOLD = 50;
         const DOUBLE_TAP_TIMEOUT = 300;
         const HOLD_TO_PEEK_DELAY = 250;
         const SLIDE_GAP = 20;
+        const CLASS_NAMES = {
+            HIDDEN: 'hidden',
+            VISIBLE: 'visible',
+            PEEKING: 'peeking',
+            ACTIVE_BUTTON: 'bg-blue-600',
+            INACTIVE_BUTTON: 'bg-gray-700'
+        };
 
+        // --- Elemen DOM ---
         const dom = {
             sliderStage: document.getElementById('slider-stage'),
             slideWrapper: document.getElementById('slide-wrapper'),
@@ -154,11 +177,14 @@
             settingsTrigger: document.getElementById('settings-trigger'),
             settingsPanel: document.getElementById('settings-panel'),
             saveSettingsBtn: document.getElementById('save-settings-btn'),
+            closeSettingsBtn: document.getElementById('close-settings-btn'),
             modeOnlineBtn: document.getElementById('mode-online-btn'),
             modeManualBtn: document.getElementById('mode-manual-btn'),
             shortcutNameInput: document.getElementById('shortcut-name-input'),
+            updateNotification: document.getElementById('update-notification')
         };
 
+        // --- State Aplikasi ---
         let state = {
             settings: { mode: 'online', shortcutName: '' },
             boardData: Array(9).fill(null),
@@ -175,24 +201,29 @@
             peekTimer: null,
             initialTranslate: 0,
         };
-        
+
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        function init() {
-            loadSettings();
-            setupEventListeners();
-            updateSlideDimensions();
+        // --- Fungsi Helper ---
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
+
+        // --- Fungsi Inti Aplikasi ---
 
         function updateSlideDimensions() {
             state.slideWidth = dom.sliderStage.getBoundingClientRect().width;
-            
             const slides = document.querySelectorAll('.slide-container');
-            slides.forEach(slide => {
-                slide.style.width = `${state.slideWidth}px`;
-            });
-
+            slides.forEach(slide => { slide.style.width = `${state.slideWidth}px`; });
             dom.peekCanvas.width = state.slideWidth;
             dom.peekCanvas.height = state.slideWidth;
             animateToSlide(state.currentSlide, 0);
@@ -243,7 +274,7 @@
         function checkWinner(board) {
             for (const combination of WINNING_COMBINATIONS) {
                 const [a, b, c] = combination;
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a]; 
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
             }
             return null;
         }
@@ -269,17 +300,78 @@
             if (state.gameFinished || state.settings.mode !== 'manual') return;
             state.isPeeking = true;
             drawOnCanvas(dom.peekCanvas, state.boardData);
-            dom.predictionSlide.classList.add('peeking');
-            dom.peekBoardContainer.classList.add('visible');
+            dom.predictionSlide.classList.add(CLASS_NAMES.PEEKING);
+            dom.peekBoardContainer.classList.add(CLASS_NAMES.VISIBLE);
         }
 
         function stopPeeking() {
             if (!state.isPeeking) return;
             state.isPeeking = false;
-            dom.predictionSlide.classList.remove('peeking');
-            dom.peekBoardContainer.classList.remove('visible');
+            dom.predictionSlide.classList.remove(CLASS_NAMES.PEEKING);
+            dom.peekBoardContainer.classList.remove(CLASS_NAMES.VISIBLE);
         }
 
+        // --- UPGRADE: Logika Gesture Manual yang Lebih Andal ---
+        function handleManualGesture(deltaX, deltaY) {
+            if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
+
+            const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+            const direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
+
+            // Peta gestur yang jauh lebih bersih, andal, dan mudah dibaca
+            const gestureMap = {
+                'col-left': { 'up': 0, 'middle': 3, 'down': 6 },
+                'col-right': { 'up': 2, 'middle': 5, 'down': 8 },
+                'row-top': { 'left': 0, 'middle': 1, 'right': 2 },
+                'row-bottom': { 'left': 6, 'middle': 7, 'right': 8 }
+            };
+
+            if (!state.swipeGroup) {
+                if (direction === 'up') state.swipeGroup = 'row-top';
+                else if (direction === 'down') state.swipeGroup = 'row-bottom';
+                else if (direction === 'left') state.swipeGroup = 'col-left';
+                else if (direction === 'right') state.swipeGroup = 'col-right';
+            } else {
+                let cellIndex = -1;
+                let secondDirection = 'middle';
+
+                if (state.swipeGroup.startsWith('col')) { // Swipe pertama vertikal
+                    if (direction === 'up') secondDirection = 'up';
+                    else if (direction === 'down') secondDirection = 'down';
+                } else { // Swipe pertama horizontal
+                    if (direction === 'left') secondDirection = 'left';
+                    else if (direction === 'right') secondDirection = 'right';
+                }
+
+                cellIndex = gestureMap[state.swipeGroup]?.[secondDirection];
+
+                if (cellIndex !== undefined && state.boardData[cellIndex] === null) {
+                    state.boardData[cellIndex] = state.currentPlayer;
+                    handlePostMove();
+                }
+                
+                state.swipeGroup = null; // Reset setelah gestur kedua
+            }
+        }
+
+        // --- UPGRADE: Fungsi Salin Gambar Asli (bukan Teks) ---
+        async function copyImageToClipboard(imageElement) {
+            const imageUrl = imageElement.src;
+            if (!imageUrl || !imageUrl.startsWith('data:image/png')) {
+                console.error("Sumber gambar tidak valid untuk disalin.");
+                return;
+            }
+            try {
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                await navigator.clipboard.write([ new ClipboardItem({ [blob.type]: blob }) ]);
+                console.log("Gambar berhasil disalin ke clipboard!");
+            } catch (err) {
+                console.error("Gagal menyalin gambar ke clipboard:", err);
+            }
+        }
+        
+        // --- Event Handlers ---
         function handleTouchStart(e) {
             e.preventDefault();
             const touch = e.touches[0];
@@ -315,7 +407,7 @@
             }
         }
 
-        function handleTouchEnd(e) {
+        async function handleTouchEnd(e) {
             clearTimeout(state.peekTimer);
             if (state.isPeeking) {
                 stopPeeking();
@@ -334,43 +426,13 @@
                     } else {
                         animateToSlide(state.currentSlide);
                     }
-                } 
-                // PERBAIKAN: Cek jika target sentuhan adalah gambar papan dan ini adalah tap (bukan drag)
-                else if (e.target === dom.boardImage) {
-                    handleBoardClick();
+                } else if (e.target === dom.boardImage) { // Jika ini 'tap', bukan 'drag'
+                    await handleBoardClick();
                 }
             } else if (state.settings.mode === 'manual' && !state.isDragging) {
                 handleManualGesture(deltaX, deltaY);
             }
             state.isDragging = false;
-        }
-
-        function handleManualGesture(deltaX, deltaY) {
-            if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
-            const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
-            let direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
-            if (!state.swipeGroup) {
-                if (direction === 'up') state.swipeGroup = 'row-top';
-                else if (direction === 'down') state.swipeGroup = 'row-bottom';
-                else if (direction === 'left') state.swipeGroup = 'col-left';
-                else if (direction === 'right') state.swipeGroup = 'col-right';
-            } else {
-                let cellIndex = -1;
-                if (state.swipeGroup.startsWith('col')) {
-                    if (direction === 'up') cellIndex = (state.swipeGroup === 'col-left' ? 0 : 2);
-                    else if (direction === 'down') cellIndex = (state.swipeGroup === 'col-left' ? 6 : 8);
-                    else cellIndex = (state.swipeGroup === 'col-left' ? 3 : 5);
-                } else {
-                    if (direction === 'left') cellIndex = (state.swipeGroup === 'row-top' ? 0 : 6);
-                    else if (direction === 'right') cellIndex = (state.swipeGroup === 'row-top' ? 2 : 8);
-                    else cellIndex = (state.swipeGroup === 'row-top' ? 1 : 7);
-                }
-                if (cellIndex !== -1 && state.boardData[cellIndex] === null) {
-                    state.boardData[cellIndex] = state.currentPlayer;
-                    handlePostMove();
-                }
-                state.swipeGroup = null;
-            }
         }
         
         function handleDoubleTap() {
@@ -381,64 +443,32 @@
                 handlePostMove();
             }
         }
-
-        function handleBoardClick() {
-            // Fungsi ini sekarang dipanggil dari handleTouchEnd
+        
+        async function handleBoardClick() {
             if (!state.gameFinished) return;
-            const base64Data = dom.boardImage.src;
-            // Pengecekan sederhana untuk memastikan src bukan string kosong atau URL halaman
-            if (!base64Data || !base64Data.startsWith('data:image/png')) {
-                console.error("Data gambar tidak valid untuk disalin.");
-                return;
+            await copyImageToClipboard(dom.boardImage);
+            if (state.settings.shortcutName) {
+                setTimeout(() => {
+                    window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.shortcutName)}`;
+                }, 100);
             }
-
-            navigator.clipboard.writeText(base64Data)
-                .then(() => {
-                    console.log("Board image copied to clipboard");
-                    if (state.settings.shortcutName) {
-                        setTimeout(() => {
-                           window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.shortcutName)}`;
-                        }, 100);
-                    }
-                })
-                .catch(err => {
-                    console.error("Clipboard API gagal, mencoba fallback:", err);
-                    // Fallback untuk browser/konteks lama
-                    try {
-                        const textArea = document.createElement('textarea');
-                        textArea.value = base64Data;
-                        textArea.style.position = 'fixed'; // Hindari scroll jump
-                        textArea.style.opacity = '0';
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        const successful = document.execCommand('copy');
-                        console.log('Fallback copy successful:', successful);
-                        document.body.removeChild(textArea);
-
-                        if (successful && state.settings.shortcutName) {
-                            setTimeout(() => {
-                                window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.shortcutName)}`;
-                            }, 100);
-                        }
-                    } catch (fallbackErr) {
-                        console.error("Fallback copy juga gagal:", fallbackErr);
-                    }
-                });
         }
         
+        // --- Pengaturan & Mode ---
         function toggleMode(newMode) {
             state.settings.mode = newMode;
             resetGame();
             if (newMode === 'online') initializeFirebaseListener();
             else if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
+            
             const isOnline = newMode === 'online';
-            dom.modeOnlineBtn.classList.toggle('bg-blue-600', isOnline);
-            dom.modeOnlineBtn.classList.toggle('bg-gray-700', !isOnline);
-            dom.modeManualBtn.classList.toggle('bg-blue-600', !isOnline);
-            dom.modeManualBtn.classList.toggle('bg-gray-700', isOnline);
+            dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isOnline);
+            dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isOnline);
+            dom.modeManualBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, !isOnline);
+            dom.modeManualBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, isOnline);
             dom.shortcutNameInput.value = state.settings.shortcutName || '';
         }
-        
+
         function initializeFirebaseListener() {
             if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
             const gameRef = ref(db, 'magic-game-state');
@@ -454,21 +484,13 @@
             });
         }
         
-        function setupEventListeners() {
-            const stage = dom.sliderStage;
-            stage.addEventListener('touchstart', handleTouchStart, { passive: false });
-            stage.addEventListener('touchmove', handleTouchMove, { passive: false });
-            stage.addEventListener('touchend', handleTouchEnd);
-            window.addEventListener('resize', updateSlideDimensions);
-            dom.settingsTrigger.addEventListener('click', () => dom.settingsPanel.classList.remove('hidden'));
-            dom.saveSettingsBtn.addEventListener('click', () => {
-                state.settings.shortcutName = dom.shortcutNameInput.value.trim();
-                localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
-                dom.settingsPanel.classList.add('hidden');
-            });
-            dom.modeOnlineBtn.addEventListener('click', () => toggleMode('online'));
-            dom.modeManualBtn.addEventListener('click', () => toggleMode('manual'));
-            // PERBAIKAN: Event listener 'click' pada boardImage dihapus karena tidak efektif.
+        function openSettings() { dom.settingsPanel.classList.remove(CLASS_NAMES.HIDDEN); }
+        function closeSettings() { dom.settingsPanel.classList.add(CLASS_NAMES.HIDDEN); }
+
+        function saveSettings() {
+            state.settings.shortcutName = dom.shortcutNameInput.value.trim();
+            localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
+            closeSettings();
         }
 
         function loadSettings() {
@@ -478,6 +500,67 @@
                 state.settings = { ...defaultSettings, ...JSON.parse(savedSettings) };
             }
             toggleMode(state.settings.mode);
+        }
+
+        // --- Pendaftaran Service Worker & Trigger Update ---
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => console.log('Service Worker berhasil didaftarkan:', registration))
+                    .catch(error => console.log('Pendaftaran Service Worker gagal:', error));
+            }
+        }
+        
+        function showUpdateNotification() {
+            if (dom.updateNotification) {
+                dom.updateNotification.classList.remove(CLASS_NAMES.HIDDEN);
+                setTimeout(() => {
+                    dom.updateNotification.classList.add(CLASS_NAMES.HIDDEN);
+                }, 4000);
+            }
+        }
+
+        function listenForServiceWorkerUpdates() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'CACHE_UPDATED') {
+                        console.log('Menerima pesan update dari Service Worker.');
+                        showUpdateNotification();
+                    }
+                });
+            }
+        }
+
+        // --- Inisialisasi Event Listeners ---
+        function setupEventListeners() {
+            const stage = dom.sliderStage;
+            stage.addEventListener('touchstart', handleTouchStart, { passive: false });
+            stage.addEventListener('touchmove', handleTouchMove, { passive: false });
+            stage.addEventListener('touchend', handleTouchEnd);
+
+            // UPGRADE: Debounce pada resize untuk performa lebih baik
+            window.addEventListener('resize', debounce(updateSlideDimensions, 250));
+            
+            dom.settingsTrigger.addEventListener('click', openSettings);
+            dom.closeSettingsBtn.addEventListener('click', closeSettings);
+            dom.saveSettingsBtn.addEventListener('click', saveSettings);
+
+            dom.modeOnlineBtn.addEventListener('click', () => toggleMode('online'));
+            dom.modeManualBtn.addEventListener('click', () => toggleMode('manual'));
+
+            // UPGRADE: Tutup pengaturan dengan tombol Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeSettings();
+            });
+        }
+        
+        // --- Inisialisasi Aplikasi ---
+        function init() {
+            loadSettings();
+            setupEventListeners();
+            updateSlideDimensions();
+            registerServiceWorker(); // Mendaftarkan service worker saat aplikasi dimulai
+            listenForServiceWorkerUpdates(); // Mendengarkan pesan dari service worker
         }
 
         init();
