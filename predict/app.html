@@ -57,6 +57,23 @@
             align-items: center;
             justify-content: center;
             border-radius: 0; 
+            transition: opacity 0.2s ease-in-out;
+        }
+        #peek-board-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; 
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        #peek-board-container.visible {
+            opacity: 1;
+        }
+        #prediction-slide.peeking {
+            opacity: 0.1;
         }
     </style>
 </head>
@@ -82,10 +99,12 @@
         </div>
     </div>
     
-    <!-- "Panggung" atau Jendela Pandang Slider -->
     <main id="slider-stage">
+      <div id="peek-board-container">
+          <canvas id="peek-canvas"></canvas>
+      </div>
       <div id="slide-wrapper">
-          <div class="slide-container text-3xl font-bold text-center">
+          <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
               prediksi saya..
           </div>
           <div class="slide-container text-2xl font-semibold text-center">
@@ -114,11 +133,15 @@
         const WINNING_COMBINATIONS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
         const SWIPE_THRESHOLD = 50;
         const DOUBLE_TAP_TIMEOUT = 300;
+        const HOLD_TO_PEEK_DELAY = 250;
         const SLIDE_GAP = 20;
 
         const dom = {
             sliderStage: document.getElementById('slider-stage'),
             slideWrapper: document.getElementById('slide-wrapper'),
+            predictionSlide: document.getElementById('prediction-slide'),
+            peekBoardContainer: document.getElementById('peek-board-container'),
+            peekCanvas: document.getElementById('peek-canvas'),
             resultText: document.getElementById('result-text'),
             boardImage: document.getElementById('board-image'),
             settingsTrigger: document.getElementById('settings-trigger'),
@@ -140,6 +163,8 @@
             firebaseUnsubscribe: null,
             slideWidth: 0,
             isDragging: false,
+            isPeeking: false,
+            peekTimer: null,
             initialTranslate: 0,
         };
         
@@ -158,6 +183,8 @@
             slides.forEach(slide => {
                 slide.style.width = `${state.slideWidth}px`;
             });
+            dom.peekCanvas.width = state.slideWidth;
+            dom.peekCanvas.height = state.slideWidth;
             animateToSlide(state.currentSlide, 0);
         }
 
@@ -168,12 +195,14 @@
             dom.slideWrapper.style.transform = `translateX(-${totalTranslation}px)`;
         }
 
-        function renderFinalBoard(boardData) {
-            const canvas = document.createElement('canvas');
-            const size = 512;
-            canvas.width = size; canvas.height = size;
+        // PERBAIKAN: Fungsi ini sekarang HANYA menggambar di atas elemen <canvas>
+        function drawOnCanvas(canvas, boardData) {
+            const size = canvas.width;
+            canvas.height = size;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, size, size);
+            ctx.clearRect(0, 0, size, size);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(0, 0, size, size);
             const cellSize = size / 3;
             ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 6; ctx.beginPath();
             for (let i = 1; i < 3; i++) {
@@ -190,7 +219,6 @@
                 ctx.fillStyle = value === 'X' ? '#EF4444' : '#3B82F6';
                 ctx.fillText(value, x, y);
             });
-            dom.boardImage.src = canvas.toDataURL('image/png');
         }
 
         function resetGame() {
@@ -199,7 +227,7 @@
             state.gameFinished = false;
             state.swipeGroup = null;
             dom.resultText.textContent = '';
-            dom.boardImage.src = '';
+            dom.boardImage.src = ''; // Kosongkan sumber gambar
             animateToSlide(0);
         }
 
@@ -215,26 +243,52 @@
             const winner = checkWinner(state.boardData);
             const isFull = state.boardData.every(cell => cell !== null);
             if (winner || isFull) {
-                state.gameFinished = true; // Kunci diaktifkan. Swipe sekarang untuk navigasi.
+                state.gameFinished = true;
                 const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `permainan berakhir seri`;
                 dom.resultText.textContent = message;
-                renderFinalBoard(state.boardData);
+
+                // PERBAIKAN: Logika yang benar untuk membuat gambar
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 512; // Resolusi tinggi
+                tempCanvas.height = 512;
+                drawOnCanvas(tempCanvas, state.boardData); // Gambar di kanvas sementara
+                dom.boardImage.src = tempCanvas.toDataURL('image/png'); // Setel hasilnya ke <img>
             } else {
                 state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
             }
         }
         
+        function startPeeking() {
+            if (state.gameFinished || state.settings.mode !== 'manual') return;
+            state.isPeeking = true;
+            drawOnCanvas(dom.peekCanvas, state.boardData); // Menggunakan fungsi gambar yang sama
+            dom.predictionSlide.classList.add('peeking');
+            dom.peekBoardContainer.classList.add('visible');
+        }
+
+        function stopPeeking() {
+            if (!state.isPeeking) return;
+            state.isPeeking = false;
+            dom.predictionSlide.classList.remove('peeking');
+            dom.peekBoardContainer.classList.remove('visible');
+        }
+
         function handleTouchStart(e) {
             e.preventDefault();
             const touch = e.touches[0];
             state.touchStart.x = touch.clientX;
             state.touchStart.y = touch.clientY;
             state.isDragging = false;
+            
+            clearTimeout(state.peekTimer);
+            state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
+
             if (state.gameFinished) {
                 dom.slideWrapper.style.transition = 'none';
                 const totalTranslation = (state.slideWidth * state.currentSlide) + (SLIDE_GAP * state.currentSlide);
                 state.initialTranslate = -totalTranslation;
             }
+            
             const now = Date.now();
             if (now - state.lastTapTime <= DOUBLE_TAP_TIMEOUT) {
                 handleDoubleTap();
@@ -246,22 +300,30 @@
 
         function handleTouchMove(e) {
             e.preventDefault();
-            if (state.gameFinished) {
-                const currentX = e.touches[0].clientX;
-                const diffX = currentX - state.touchStart.x;
-                if (Math.abs(diffX) > 10) state.isDragging = true;
-                if (state.isDragging) {
-                    dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + diffX}px)`;
-                }
+            clearTimeout(state.peekTimer);
+            if (state.isPeeking) stopPeeking();
+
+            if (!state.gameFinished) return;
+            
+            const currentX = e.touches[0].clientX;
+            const diffX = currentX - state.touchStart.x;
+            if (Math.abs(diffX) > 10) state.isDragging = true;
+            if (state.isDragging) {
+                dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + diffX}px)`;
             }
         }
 
         function handleTouchEnd(e) {
+            clearTimeout(state.peekTimer);
+            if (state.isPeeking) {
+                stopPeeking();
+                return;
+            }
+
             const endX = e.changedTouches[0].clientX;
             const endY = e.changedTouches[0].clientY;
             const deltaX = endX - state.touchStart.x;
             const deltaY = endY - state.touchStart.y;
-            const isQuickFlick = !state.isDragging;
 
             if (state.gameFinished) {
                 if (state.isDragging) {
@@ -269,25 +331,22 @@
                         if (deltaX < 0) animateToSlide(state.currentSlide + 1);
                         else animateToSlide(state.currentSlide - 1);
                     } else {
-                        animateToSlide(state.currentSlide); // Snap kembali
+                        animateToSlide(state.currentSlide);
                     }
                 }
-            } else if (state.settings.mode === 'manual' && isQuickFlick) {
-                // Hanya proses gestur jika game belum selesai, mode manual, dan bukan drag
+            } else if (state.settings.mode === 'manual' && !state.isDragging) {
                 handleManualGesture(deltaX, deltaY);
             }
             state.isDragging = false;
         }
 
         function handleManualGesture(deltaX, deltaY) {
-            // Abaikan jika bukan swipe yang jelas
             if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
-
             const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
             let direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
 
             if (!state.swipeGroup) {
-                 if (direction === 'up') state.swipeGroup = 'row-top';
+                if (direction === 'up') state.swipeGroup = 'row-top';
                 else if (direction === 'down') state.swipeGroup = 'row-bottom';
                 else if (direction === 'left') state.swipeGroup = 'col-left';
                 else if (direction === 'right') state.swipeGroup = 'col-right';
@@ -296,18 +355,17 @@
                 if (state.swipeGroup.startsWith('col')) {
                     if (direction === 'up') cellIndex = (state.swipeGroup === 'col-left' ? 0 : 2);
                     else if (direction === 'down') cellIndex = (state.swipeGroup === 'col-left' ? 6 : 8);
-                    else cellIndex = (state.swipeGroup === 'col-left' ? 3 : 5); // Swipe horizontal untuk sel tengah
-                } else { // row
+                    else cellIndex = (state.swipeGroup === 'col-left' ? 3 : 5);
+                } else {
                     if (direction === 'left') cellIndex = (state.swipeGroup === 'row-top' ? 0 : 6);
                     else if (direction === 'right') cellIndex = (state.swipeGroup === 'row-top' ? 2 : 8);
-                    else cellIndex = (state.swipeGroup === 'row-top' ? 1 : 7); // Swipe vertikal untuk sel tengah
+                    else cellIndex = (state.swipeGroup === 'row-top' ? 1 : 7);
                 }
-                
                 if (cellIndex !== -1 && state.boardData[cellIndex] === null) {
                     state.boardData[cellIndex] = state.currentPlayer;
                     handlePostMove();
                 }
-                state.swipeGroup = null; // Reset setelah gestur kedua
+                state.swipeGroup = null;
             }
         }
         
@@ -325,7 +383,6 @@
             resetGame();
             if (newMode === 'online') initializeFirebaseListener();
             else if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
-
             const isOnline = newMode === 'online';
             dom.modeOnlineBtn.classList.toggle('bg-blue-600', isOnline);
             dom.modeOnlineBtn.classList.toggle('bg-gray-700', !isOnline);
