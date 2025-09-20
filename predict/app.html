@@ -379,24 +379,32 @@
         }
 
         function handleBoardClick() {
-            if (!state.gameFinished || !state.settings.shortcutName) return;
-            const base64Data = dom.boardImage.src;
+    if (!state.gameFinished) return;
+    const base64Data = dom.boardImage.src;
+    if (!base64Data) return;
+
+    // copy ke clipboard pakai API modern
+    navigator.clipboard.writeText(base64Data)
+        .then(() => {
+            console.log("Board image copied to clipboard");
+            if (state.settings.shortcutName) {
+                window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
+            }
+        })
+        .catch(err => {
+            console.error("Clipboard gagal:", err);
+            // fallback lama kalau browser nggak support
             const textArea = document.createElement('textarea');
             textArea.value = base64Data;
-            textArea.style.position = 'fixed';
-            textArea.style.top = '-9999px';
             document.body.appendChild(textArea);
             textArea.select();
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                console.error('Gagal menyalin ke clipboard:', err);
-            }
+            document.execCommand('copy');
             document.body.removeChild(textArea);
-            
-            // PERBAIKAN: Menggunakan encodeURIComponent untuk memastikan URL valid
-            window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
-        }
+            if (state.settings.shortcutName) {
+                window.location.href = `shortcuts://${encodeURIComponent(state.settings.shortcutName)}`;
+            }
+        });
+}
         
         function toggleMode(newMode) {
             state.settings.mode = newMode;
