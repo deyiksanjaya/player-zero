@@ -75,7 +75,6 @@
         #prediction-slide.peeking {
             opacity: 0.1;
         }
-        /* TAMBAHAN: Membuat gambar papan bisa di-klik */
         #board-image {
             cursor: pointer;
         }
@@ -97,7 +96,6 @@
                     <button id="mode-manual-btn" class="p-2 rounded-md transition-colors">Manual</button>
                 </div>
             </div>
-            <!-- TAMBAHAN: Input untuk nama shortcut -->
             <div>
                 <label for="shortcut-name-input" class="font-medium">Nama Shortcut</label>
                 <input type="text" id="shortcut-name-input" placeholder="Contoh: Buka Kamera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
@@ -159,11 +157,10 @@
             saveSettingsBtn: document.getElementById('save-settings-btn'),
             modeOnlineBtn: document.getElementById('mode-online-btn'),
             modeManualBtn: document.getElementById('mode-manual-btn'),
-            shortcutNameInput: document.getElementById('shortcut-name-input'), // TAMBAHAN
+            shortcutNameInput: document.getElementById('shortcut-name-input'),
         };
 
         let state = {
-            // TAMBAHAN: Properti shortcutName di dalam settings
             settings: { mode: 'online', shortcutName: '' },
             boardData: Array(9).fill(null),
             currentPlayer: 'X',
@@ -379,15 +376,11 @@
             }
         }
 
-        // TAMBAHAN: Fungsi untuk klik papan
         function handleBoardClick() {
             if (!state.gameFinished || !state.settings.shortcutName) {
-                return; // Abaikan jika game belum selesai atau shortcut belum diatur
+                return;
             }
-
             const base64Data = dom.boardImage.src;
-
-            // Salin ke clipboard
             const textArea = document.createElement('textarea');
             textArea.value = base64Data;
             textArea.style.position = 'fixed';
@@ -400,8 +393,6 @@
                 console.error('Gagal menyalin ke clipboard:', err);
             }
             document.body.removeChild(textArea);
-
-            // Redirect ke Shortcut
             window.location.href = `shortcuts://${state.settings.shortcutName}`;
         }
         
@@ -440,23 +431,19 @@
             stage.addEventListener('touchend', handleTouchEnd);
             window.addEventListener('resize', updateSlideDimensions);
             dom.settingsTrigger.addEventListener('click', () => dom.settingsPanel.classList.remove('hidden'));
-            
-            // PERBAIKAN: Menyimpan nama shortcut
             dom.saveSettingsBtn.addEventListener('click', () => {
                 state.settings.shortcutName = dom.shortcutNameInput.value.trim();
                 localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
                 dom.settingsPanel.classList.add('hidden');
             });
-
             dom.modeOnlineBtn.addEventListener('click', () => toggleMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleMode('manual'));
-            dom.boardImage.addEventListener('click', handleBoardClick); // TAMBAHAN
+            dom.boardImage.addEventListener('click', handleBoardClick);
         }
 
         function loadSettings() {
             const savedSettings = localStorage.getItem('playerZeroSettings');
             if (savedSettings) {
-                // Pastikan settings lama digabung dengan default untuk properti baru
                 const defaultSettings = { mode: 'online', shortcutName: '' };
                 state.settings = { ...defaultSettings, ...JSON.parse(savedSettings) };
             }
@@ -465,5 +452,26 @@
 
         init();
     </script>
+
+    <!-- TAMBAHAN: Kode untuk Pendaftaran & Update Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(registration => {
+            console.log('Service Worker terdaftar dengan scope:', registration.scope);
+          }).catch(error => {
+            console.log('Pendaftaran Service Worker gagal:', error);
+          });
+
+        navigator.serviceWorker.addEventListener('message', event => {
+          if (event.data && event.data.type === 'CACHE_UPDATED') {
+            if (confirm('Versi baru aplikasi tersedia. Muat ulang sekarang?')) {
+              window.location.reload();
+            }
+          }
+        });
+      }
+    </script>
+
 </body>
 </html>
