@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors</title>
+    <!-- Loading Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Additional styles for smooth transitions */
+        .transition-all {
+            transition: all 0.3s ease-in-out;
+        }
+        /* Style to disable images during authentication */
+        .is-authenticating {
+            opacity: 0.5;
+            pointer-events: none;
+            cursor: wait;
+        }
+    </style>
+</head>
+<body class="bg-white antialiased">
+
+    <!-- Main Container -->
+    <div class="min-h-screen flex flex-col items-center justify-center p-6 space-y-8">
+        
+        <!-- Image Choices -->
+        <div id="image-container" class="flex flex-row flex-wrap justify-center gap-8 is-authenticating">
+            <!-- Rock Choice -->
+            <img id="rock" 
+                 src="./icons/rock.png" 
+                 alt="Rock" 
+                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg hover:scale-105 transform transition-all"
+                 onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
+
+            <!-- Paper Choice -->
+            <img id="paper" 
+                 src="./icons/paper.png" 
+                 alt="Paper" 
+                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg hover:scale-105 transform transition-all"
+                 onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
+
+            <!-- Scissors Choice -->
+            <img id="scissors" 
+                 src="./icons/scissors.png" 
+                 alt="Scissors" 
+                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg hover:scale-105 transform transition-all"
+                 onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
+        </div>
+        
+    </div>
+
+    <!-- Overlay for Fullscreen View -->
+    <div id="fullscreen-overlay" class="hidden fixed inset-0 bg-white flex items-center justify-center z-50 p-4">
+        <button id="close-fullscreen" class="absolute top-4 right-6 text-gray-800 text-5xl font-bold hover:text-black shadow-lg">&times;</button>
+        <img id="fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg">
+    </div>
+
+    <!-- Script for functionality and Firebase -->
+    <script type="module">
+        // Import necessary functions from the Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, set, serverTimestamp as rtdbServerTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        // Firebase configuration and App ID from the environment
+        const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = rawAppId.replace(/[.#$\[\]]/g, '_'); // Sanitize the App ID for the RTDB path
+        const firebaseConfig = {
+          apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
+          authDomain: "player-zer0.firebaseapp.com",
+          databaseURL: "https://player-zer0-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "player-zer0",
+          storageBucket: "player-zer0.appspot.com",
+          messagingSenderId: "1009636905003",
+          appId: "1:1009636905003:web:f3fafd5f5a693440769a6e"
+        };
+
+        let db, auth, userId;
+
+        // Get DOM elements
+        const rockImg = document.getElementById('rock');
+        const paperImg = document.getElementById('paper');
+        const scissorsImg = document.getElementById('scissors');
+        const imageContainer = document.getElementById('image-container');
+        
+        const fullscreenOverlay = document.getElementById('fullscreen-overlay');
+        const fullscreenImage = document.getElementById('fullscreen-image');
+        const closeFullscreenBtn = document.getElementById('close-fullscreen');
+
+        // Function to initialize Firebase and handle authentication once
+        function initializeAndAuth() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        // User is signed in (including anonymous)
+                        userId = user.uid;
+                        console.log("User authenticated with UID:", userId);
+                        // Re-enable the image choices
+                        imageContainer.classList.remove('is-authenticating');
+                    } else {
+                        // User is not signed in, perform anonymous sign-in
+                        try {
+                            await signInAnonymously(auth);
+                            // onAuthStateChanged will be called again after successful sign-in
+                        } catch (error) {
+                            console.error("Authentication failed:", error);
+                        }
+                    }
+                });
+
+            } catch (e) {
+                console.error("Error initializing Firebase:", e);
+            }
+        }
+
+        // Function to update the choice in the Realtime Database
+        async function updateChoice(choice) {
+            if (!db || !userId) {
+                console.error('Realtime Database is not ready or user is not authenticated.');
+                return;
+            }
+
+            try {
+                const gameRef = ref(db, 'rock-paper-scissor');
+                
+                await set(gameRef, {
+                    userChoice: choice,
+                    updatedAt: rtdbServerTimestamp(),
+                    userId: userId
+                });
+
+                console.log(`Choice '${choice}' successfully written to Realtime Database.`);
+            } catch (error) {
+                console.error("Error writing to Realtime Database: ", error);
+            }
+        }
+
+        // Function to display the image in fullscreen mode
+        function showFullscreen(imageSrc) {
+            fullscreenImage.src = imageSrc;
+            fullscreenOverlay.classList.remove('hidden');
+        }
+
+        // Function to close the fullscreen view
+        function closeFullscreen() {
+            fullscreenOverlay.classList.add('hidden');
+        }
+
+        // Function that is called when an image is clicked
+        async function handleImageClick(choice, imgSrc) {
+            showFullscreen(imgSrc);
+            await updateChoice(choice);
+        }
+        
+        rockImg.addEventListener('click', () => handleImageClick('rock', rockImg.src));
+        paperImg.addEventListener('click', () => handleImageClick('paper', paperImg.src));
+        scissorsImg.addEventListener('click', () => handleImageClick('scissors', scissorsImg.src));
+        
+        // Add event listeners for the close button and the overlay
+        closeFullscreenBtn.addEventListener('click', closeFullscreen);
+        fullscreenOverlay.addEventListener('click', (e) => {
+            if (e.target === fullscreenOverlay) {
+                closeFullscreen();
+            }
+        });
+
+        // Call the initialization and authentication function when the script loads
+        initializeAndAuth();
+
+    </script>
+</body>
+</html>
+
