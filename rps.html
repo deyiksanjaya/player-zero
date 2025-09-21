@@ -3,57 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rock Paper Scissors</title>
+    <title>Rock Paper Scissors Sender</title>
     <!-- Loading Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        /* Additional styles for smooth transitions */
-        .transition-all {
-            transition: all 0.3s ease-in-out;
+        body {
+            font-family: 'Poppins', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         /* Style to disable images during authentication */
         .is-authenticating {
-            opacity: 0.5;
             pointer-events: none;
             cursor: wait;
         }
     </style>
 </head>
-<body class="bg-white antialiased">
+<body class="bg-black antialiased">
 
     <!-- Main Container -->
     <div class="min-h-screen flex flex-col items-center justify-center p-6 space-y-8">
         
         <!-- Image Choices -->
-        <div id="image-container" class="flex flex-row flex-wrap justify-center gap-8 is-authenticating">
+        <div id="image-container" class="flex flex-col flex-wrap justify-center gap-8 is-authenticating">
             <!-- Rock Choice -->
             <img id="rock" 
-                 src="./icons/rps/rock.png" 
+                 src="/icons/rps/rock.png" 
                  alt="Rock" 
-                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg hover:scale-105 transform transition-all"
+                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg invert"
                  onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
 
             <!-- Paper Choice -->
             <img id="paper" 
-                 src="./icons/rps/paper.png" 
+                 src="/icons/rps/paper.png" 
                  alt="Paper" 
-                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg hover:scale-105 transform transition-all"
+                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg invert"
                  onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
 
             <!-- Scissors Choice -->
             <img id="scissors" 
-                 src="./icons/rps/scissors.png" 
+                 src="/icons/rps/scissors.png" 
                  alt="Scissors" 
-                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg hover:scale-105 transform transition-all"
+                 class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover cursor-pointer shadow-lg invert"
                  onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
         </div>
         
     </div>
 
     <!-- Overlay for Fullscreen View -->
-    <div id="fullscreen-overlay" class="hidden fixed inset-0 bg-white flex items-center justify-center z-50 p-4">
-        <button id="close-fullscreen" class="absolute top-4 right-6 text-gray-800 text-5xl font-bold hover:text-black shadow-lg">&times;</button>
-        <img id="fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg">
+    <div id="fullscreen-overlay" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50 p-4">
+        <button id="close-fullscreen" class="absolute top-4 right-6 text-gray-200 text-5xl font-bold hover:text-white shadow-lg">&times;</button>
+        <img id="fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg invert">
     </div>
 
     <!-- Script for functionality and Firebase -->
@@ -64,8 +68,6 @@
         import { getDatabase, ref, set, serverTimestamp as rtdbServerTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         // Firebase configuration and App ID from the environment
-        const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const appId = rawAppId.replace(/[.#$\[\]]/g, '_'); // Sanitize the App ID for the RTDB path
         const firebaseConfig = {
           apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
           authDomain: "player-zer0.firebaseapp.com",
@@ -175,4 +177,3 @@
     </script>
 </body>
 </html>
-
