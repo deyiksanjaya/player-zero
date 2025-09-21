@@ -174,8 +174,8 @@
     </div>
     
     <!-- Overlay Fullscreen untuk RPS -->
-    <div id="rps-fullscreen-overlay" class="hidden fixed inset-0 bg-white flex items-center justify-center z-50 p-4">
-        <button id="rps-close-fullscreen" class="absolute top-4 right-6 text-gray-800 text-5xl font-bold hover:text-black shadow-lg">&times;</button>
+    <div id="rps-fullscreen-overlay" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50 p-4">
+        <button id="rps-close-fullscreen" class="absolute top-4 right-6 text-gray-200 text-5xl font-bold hover:text-white shadow-lg">&times;</button>
         <img id="rps-fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg">
     </div>
 
@@ -195,6 +195,7 @@
         const firebaseConfig = {
             apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
             authDomain: "player-zer0.firebaseapp.com",
+            // PERBAIKAN: Memperbaiki typo dari firebasedabase.app menjadi firebasedatabase.app
             databaseURL: "https://player-zer0-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "player-zer0",
             storageBucket: "player-zer0.appspot.com",
@@ -264,7 +265,7 @@
                 rpsLoses: 0,
             },
             firebaseUnsubscribe: null,
-            isFirstRpsData: true,
+            isInitialRpsLoad: true, // PERBAIKAN: Flag untuk data awal RPS
             // TTT State
             boardData: Array(9).fill(null),
             currentPlayer: 'X',
@@ -305,7 +306,10 @@
         // --- FUNGSI UTAMA PERGANTIAN MODE ---
         function switchGameMode(mode, isInitialLoad = false) {
             state.settings.gameMode = mode;
-            if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
+            if (state.firebaseUnsubscribe) {
+                state.firebaseUnsubscribe();
+                state.firebaseUnsubscribe = null;
+            }
 
             const isTTT = mode === 'TicTacToe';
             dom.tttGame.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
@@ -395,7 +399,7 @@
             const isFull = state.boardData.every(cell => cell !== null);
             if (winner || isFull) {
                 state.gameFinished = true;
-                const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `permainan berakhir seri`;
+                const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `saya sudah tau dari awal kalau permainan akan berakhir SERI`;
                 dom.resultText.textContent = message;
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = 512; tempCanvas.height = 512;
@@ -406,7 +410,6 @@
             }
         }
         
-        // ... (semua fungsi TTT lainnya seperti startPeeking, handleManualGesture, dll tetap di sini)
         function startPeeking() {
             if (state.gameFinished || state.settings.tttMode !== 'manual') return;
             state.isPeeking = true;
@@ -478,7 +481,6 @@
             }
         }
         
-        // --- Event Handlers TTT---
         function handleTouchStart(e) {
             e.preventDefault();
             const touch = e.touches[0];
@@ -561,8 +563,9 @@
         function toggleTttMode(newMode, isInitialLoad = false) {
             state.settings.tttMode = newMode;
             if (!isInitialLoad) resetTttGame();
-            if (newMode === 'online') initializeTttFirebaseListener();
-            else if (state.firebaseUnsubscribe) {
+            if (newMode === 'online') {
+                initializeTttFirebaseListener();
+            } else if (state.firebaseUnsubscribe) {
                  state.firebaseUnsubscribe();
                  state.firebaseUnsubscribe = null;
             }
@@ -575,7 +578,10 @@
         }
 
         function initializeTttFirebaseListener() {
-            if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
+            if (state.firebaseUnsubscribe) {
+                state.firebaseUnsubscribe();
+                state.firebaseUnsubscribe = null;
+            }
             const gameRef = ref(db, 'magic-game-state');
             state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
                 if (!snapshot.exists() || state.gameFinished) return;
@@ -597,7 +603,7 @@
         }
         
         function resetRpsGame() {
-            state.isFirstRpsData = true;
+            state.isInitialRpsLoad = true; // PERBAIKAN: Reset flag di sini
             state.rpsCurrentRound = 0;
             state.rpsCurrentWins = 0;
             state.rpsCurrentLoses = 0;
@@ -621,20 +627,34 @@
         }
 
         function initializeRpsFirebaseListener() {
-            if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
+            if (state.firebaseUnsubscribe) {
+                state.firebaseUnsubscribe();
+                state.firebaseUnsubscribe = null;
+            }
+            console.log("Memasang listener Firebase untuk RPS...");
             const gameRef = ref(db, 'rock-paper-scissors');
             state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
-                if (!snapshot.exists()) return;
-                
-                if (state.isFirstRpsData) {
-                    state.isFirstRpsData = false;
-                    return; // Abaikan data awal
+                console.log("Data RPS diterima dari Firebase:", snapshot.val());
+                if (!snapshot.exists()) {
+                    console.log("Data tidak ada (snapshot kosong).");
+                    return;
                 }
                 
+                // PERBAIKAN: Gunakan flag untuk mengabaikan data awal
+                if (state.isInitialRpsLoad) {
+                    console.log("Mengabaikan data awal saat memuat.");
+                    state.isInitialRpsLoad = false;
+                    return;
+                }
+                
+                console.log("Memproses data baru RPS...");
                 const data = snapshot.val();
                 const opponentChoice = data.userChoice;
                 if (opponentChoice) {
+                    console.log(`Pilihan lawan adalah: ${opponentChoice}. Menjalankan logika...`);
                     handleRpsMagic(opponentChoice);
+                } else {
+                    console.log("Tidak ditemukan 'userChoice' pada data baru.");
                 }
             });
         }
@@ -666,13 +686,7 @@
             
             state.rpsCurrentRound++;
 
-            // Reset setelah 2 detik
-            setTimeout(() => {
-                closeRpsFullscreen();
-                if (state.rpsCurrentRound >= state.settings.rpsRounds) {
-                     console.log("RPS Game Selesai!");
-                }
-            }, 2000);
+            // Timeout otomatis dihilangkan. Tampilan akan tetap ada sampai ditutup manual.
         }
 
         function showRpsFullscreen(imageSrc) {
@@ -682,6 +696,15 @@
 
         function closeRpsFullscreen() {
             dom.rpsFullscreenOverlay.classList.add('hidden');
+            // Cek apakah permainan sudah selesai saat overlay ditutup
+            if (state.rpsCurrentRound >= state.settings.rpsRounds) {
+                 console.log("RPS Game Selesai!");
+                 // Reset lagi untuk game berikutnya
+                 generateRpsPlan();
+                 state.rpsCurrentRound = 0;
+                 state.rpsCurrentWins = 0;
+                 state.rpsCurrentLoses = 0;
+            }
         }
 
         // --- PENGATURAN & PENYIMPANAN ---
@@ -703,6 +726,7 @@
             let loses = parseInt(dom.rpsLosesInput.value) || 0;
 
             if (wins + loses > rounds) {
+                // Menggunakan alert() karena ini adalah feedback kritis untuk pengguna
                 alert("Jumlah target Menang & Kalah tidak boleh melebihi Jumlah Ronde.");
                 return;
             }
@@ -736,6 +760,10 @@
             dom.rpsWinsInput.value = state.settings.rpsWins;
             dom.rpsLosesInput.value = state.settings.rpsLoses;
             
+            // Panggil switchGameMode setelah memastikan UI pengaturan TTT/RPS terlihat/tersembunyi dengan benar
+            const isTTT = state.settings.gameMode === 'TicTacToe';
+            dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
+            dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
             switchGameMode(state.settings.gameMode, true);
         }
         
