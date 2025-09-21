@@ -167,16 +167,16 @@
     <!-- Kontainer Game Rock-Paper-Scissors -->
     <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
         <div id="rps-image-container" class="flex flex-col flex-wrap justify-center gap-8 is-authenticating">
-            <img id="rock" src="/icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
-            <img id="paper" src="/icons/rps/paper.png" alt="Paper" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
-            <img id="scissors" src="/icons/rps/scissors.png" alt="Scissors" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
+            <img id="rock" src="/icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg invert" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
+            <img id="paper" src="/icons/rps/paper.png" alt="Paper" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg invert" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
+            <img id="scissors" src="/icons/rps/scissors.png" alt="Scissors" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg invert" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
         </div>
     </div>
     
     <!-- Overlay Fullscreen untuk RPS -->
     <div id="rps-fullscreen-overlay" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50 p-4">
         <button id="rps-close-fullscreen" class="absolute top-4 right-6 text-gray-200 text-5xl font-bold hover:text-white shadow-lg">&times;</button>
-        <img id="rps-fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg">
+        <img id="rps-fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg invert">
     </div>
 
 
@@ -399,7 +399,7 @@
             const isFull = state.boardData.every(cell => cell !== null);
             if (winner || isFull) {
                 state.gameFinished = true;
-                const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `saya sudah tau dari awal kalau permainan akan berakhir SERI`;
+                const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `permainan berakhir seri`;
                 dom.resultText.textContent = message;
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = 512; tempCanvas.height = 512;
