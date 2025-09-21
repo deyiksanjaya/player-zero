@@ -35,25 +35,26 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* --- PERBAIKAN LAYOUT --- */
-        /* Mengadopsi gaya dari contoh 'Atma' */
-        #slider-stage {
+        /* --- TTT Layout --- */
+        #tictactoe-game {
             position: relative;
-            width: 100vw; /* Mengisi lebar layar */
-            height: 100vw; /* Membuat rasio 1:1 */
-            max-height: 100vh; /* Memastikan tidak lebih tinggi dari layar */
+            width: 100vw; 
+            height: 100vw; 
+            /* Menambahkan batas ukuran agar tidak fullscreen di layar besar */
+            max-width: 450px;
+            max-height: 450px;
             box-sizing: border-box;
             overflow: hidden;
         }
         #slide-wrapper {
             height: 100%;
             display: flex;
-            gap: 20px; /* Jarak antar slide */
+            gap: 20px; 
         }
         .slide-container {
             height: 100%;
-            width: 100vw; /* Setiap slide mengisi lebar layar */
-            flex-shrink: 0; /* Mencegah slide menyusut */
+            width: 100vw;
+            flex-shrink: 0;
             box-sizing: border-box;
             background-color: white;
             color: black;
@@ -62,8 +63,6 @@
             justify-content: center;
             transition: opacity 0.2s ease-in-out;
         }
-        /* --- AKHIR PERBAIKAN --- */
-
         #peek-board-container {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -74,17 +73,18 @@
             opacity: 0;
             transition: opacity 0.2s ease-in-out;
         }
-        #peek-board-container.visible {
-            opacity: 1;
+        #peek-board-container.visible { opacity: 1; }
+        #prediction-slide.peeking { opacity: 0.1; }
+        #board-image { cursor: pointer; }
+
+        /* --- RPS Layout --- */
+        .transition-all {
+            transition: all 0.3s ease-in-out;
         }
-        #prediction-slide.peeking {
-            opacity: 0.1;
-        }
-        #board-image {
-            cursor: pointer;
-        }
-        #update-notification {
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        .is-authenticating {
+            /* Efek meredup dihilangkan, namun tetap non-aktif saat otentikasi */
+            pointer-events: none;
+            cursor: wait;
         }
     </style>
 </head>
@@ -95,21 +95,49 @@
 
     <!-- Panel Pengaturan (Modal) -->
     <div id="settings-panel" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-gray-800 border border-gray-700 text-white rounded-xl shadow-lg w-full max-w-sm p-6 space-y-4">
+        <div class="bg-gray-800 border border-gray-700 text-white rounded-xl shadow-lg w-full max-w-sm p-6 space-y-6">
             <div class="flex justify-between items-center">
-                 <h2 class="text-xl font-bold">Pengaturan</h2>
-                 <button id="close-settings-btn" aria-label="Tutup Pengaturan" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+                <h2 class="text-xl font-bold">Pengaturan</h2>
+                <button id="close-settings-btn" aria-label="Tutup Pengaturan" class="text-gray-400 hover:text-white text-3xl">&times;</button>
             </div>
+
             <div>
-                <label class="font-medium">Mode Input</label>
-                <div class="mt-2 grid grid-cols-2 gap-2">
-                    <button id="mode-online-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Online">Online</button>
-                    <button id="mode-manual-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Manual">Manual</button>
+                <label for="game-mode-select" class="font-medium">Mode Permainan</label>
+                <select id="game-mode-select" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <option value="TicTacToe">Tic-Tac-Toe</option>
+                    <option value="RockPaperScissors">Rock-Paper-Scissors</option>
+                </select>
+            </div>
+
+            <!-- Pengaturan Tic-Tac-Toe -->
+            <div id="tictactoe-settings" class="space-y-4">
+                <div>
+                    <label class="font-medium">Mode Input</label>
+                    <div class="mt-2 grid grid-cols-2 gap-2">
+                        <button id="mode-online-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Online">Online</button>
+                        <button id="mode-manual-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Manual">Manual</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="shortcut-name-input" class="font-medium">Nama Shortcut (iOS)</label>
+                    <input type="text" id="shortcut-name-input" placeholder="Contoh: Buka Kamera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
-            <div>
-                <label for="shortcut-name-input" class="font-medium">Nama Shortcut (iOS)</label>
-                <input type="text" id="shortcut-name-input" placeholder="Contoh: Buka Kamera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+
+            <!-- Pengaturan Rock-Paper-Scissors -->
+            <div id="rps-settings" class="hidden space-y-4">
+                 <div>
+                    <label for="rps-rounds-input" class="font-medium">Jumlah Ronde (1-5)</label>
+                    <input type="number" id="rps-rounds-input" min="1" max="5" value="5" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                 <div>
+                    <label for="rps-wins-input" class="font-medium">Target Menang</label>
+                    <input type="number" id="rps-wins-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                 <div>
+                    <label for="rps-loses-input" class="font-medium">Target Kalah</label>
+                    <input type="number" id="rps-loses-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
             </div>
 
             <div class="mt-6 flex justify-end">
@@ -118,22 +146,39 @@
         </div>
     </div>
 
-    <main id="slider-stage">
-      <div id="peek-board-container">
-          <canvas id="peek-canvas"></canvas>
-      </div>
-      <div id="slide-wrapper">
-          <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
-              prediksi saya..
-          </div>
-          <div class="slide-container text-2xl font-semibold text-center">
-              <h2 id="result-text" class="px-8"></h2>
-          </div>
-          <div class="slide-container">
-              <img id="board-image" alt="Papan Permainan Akhir" class="w-full h-full object-contain">
-          </div>
-      </div>
+    <!-- Kontainer Game Tic-Tac-Toe -->
+    <main id="tictactoe-game">
+        <div id="peek-board-container">
+            <canvas id="peek-canvas"></canvas>
+        </div>
+        <div id="slide-wrapper">
+            <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
+                prediksi saya..
+            </div>
+            <div class="slide-container text-2xl font-semibold text-center">
+                <h2 id="result-text" class="px-8"></h2>
+            </div>
+            <div class="slide-container">
+                <img id="board-image" alt="Papan Permainan Akhir" class="w-full h-full object-contain">
+            </div>
+        </div>
     </main>
+
+    <!-- Kontainer Game Rock-Paper-Scissors -->
+    <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
+        <div id="rps-image-container" class="flex flex-col flex-wrap justify-center gap-8 is-authenticating">
+            <img id="rock" src="./icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
+            <img id="paper" src="./icons/rps/paper.png" alt="Paper" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
+            <img id="scissors" src="./icons/rps/scissors.png" alt="Scissors" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
+        </div>
+    </div>
+    
+    <!-- Overlay Fullscreen untuk RPS -->
+    <div id="rps-fullscreen-overlay" class="hidden fixed inset-0 bg-white flex items-center justify-center z-50 p-4">
+        <button id="rps-close-fullscreen" class="absolute top-4 right-6 text-gray-800 text-5xl font-bold hover:text-black shadow-lg">&times;</button>
+        <img id="rps-fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg">
+    </div>
+
 
     <!-- Notifikasi Update PWA -->
     <div id="update-notification" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg">
@@ -142,11 +187,11 @@
 
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, onValue, set, serverTimestamp as rtdbServerTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         // --- Konfigurasi Firebase ---
-        // Untuk pemakaian pribadi, konfigurasi di sisi klien seperti ini tidak masalah.
         const firebaseConfig = {
             apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
             authDomain: "player-zer0.firebaseapp.com",
@@ -156,7 +201,7 @@
             messagingSenderId: "1009636905003",
             appId: "1:1009636905003:web:f3fafd5f5a693440769a6e"
         };
-
+        
         // --- Konstanta ---
         const WINNING_COMBINATIONS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
         const SWIPE_THRESHOLD = 50;
@@ -173,26 +218,54 @@
 
         // --- Elemen DOM ---
         const dom = {
-            sliderStage: document.getElementById('slider-stage'),
+            // Umum
+            settingsTrigger: document.getElementById('settings-trigger'),
+            settingsPanel: document.getElementById('settings-panel'),
+            saveSettingsBtn: document.getElementById('save-settings-btn'),
+            closeSettingsBtn: document.getElementById('close-settings-btn'),
+            updateNotification: document.getElementById('update-notification'),
+            gameModeSelect: document.getElementById('game-mode-select'),
+            // TicTacToe
+            tttGame: document.getElementById('tictactoe-game'),
+            sliderStage: document.getElementById('tictactoe-game'), // alias for tttGame
             slideWrapper: document.getElementById('slide-wrapper'),
             predictionSlide: document.getElementById('prediction-slide'),
             peekBoardContainer: document.getElementById('peek-board-container'),
             peekCanvas: document.getElementById('peek-canvas'),
             resultText: document.getElementById('result-text'),
             boardImage: document.getElementById('board-image'),
-            settingsTrigger: document.getElementById('settings-trigger'),
-            settingsPanel: document.getElementById('settings-panel'),
-            saveSettingsBtn: document.getElementById('save-settings-btn'),
-            closeSettingsBtn: document.getElementById('close-settings-btn'),
+            tttSettings: document.getElementById('tictactoe-settings'),
             modeOnlineBtn: document.getElementById('mode-online-btn'),
             modeManualBtn: document.getElementById('mode-manual-btn'),
             shortcutNameInput: document.getElementById('shortcut-name-input'),
-            updateNotification: document.getElementById('update-notification')
+            // RPS
+            rpsGame: document.getElementById('rps-game'),
+            rpsImageContainer: document.getElementById('rps-image-container'),
+            rockImg: document.getElementById('rock'),
+            paperImg: document.getElementById('paper'),
+            scissorsImg: document.getElementById('scissors'),
+            rpsFullscreenOverlay: document.getElementById('rps-fullscreen-overlay'),
+            rpsFullscreenImage: document.getElementById('rps-fullscreen-image'),
+            rpsCloseFullscreenBtn: document.getElementById('rps-close-fullscreen'),
+            rpsSettings: document.getElementById('rps-settings'),
+            rpsRoundsInput: document.getElementById('rps-rounds-input'),
+            rpsWinsInput: document.getElementById('rps-wins-input'),
+            rpsLosesInput: document.getElementById('rps-loses-input'),
         };
 
         // --- State Aplikasi ---
         let state = {
-            settings: { mode: 'online', shortcutName: '' },
+            settings: { 
+                gameMode: 'TicTacToe',
+                tttMode: 'online', 
+                tttShortcutName: '',
+                rpsRounds: 5,
+                rpsWins: 0,
+                rpsLoses: 0,
+            },
+            firebaseUnsubscribe: null,
+            isFirstRpsData: true,
+            // TTT State
             boardData: Array(9).fill(null),
             currentPlayer: 'X',
             gameFinished: false,
@@ -200,16 +273,21 @@
             swipeGroup: null,
             lastTapTime: 0,
             touchStart: { x: 0, y: 0 },
-            firebaseUnsubscribe: null,
             slideWidth: 0,
             isDragging: false,
             isPeeking: false,
             peekTimer: null,
             initialTranslate: 0,
+            // RPS State
+            rpsGamePlan: [],
+            rpsCurrentRound: 0,
+            rpsCurrentWins: 0,
+            rpsCurrentLoses: 0,
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        const auth = getAuth(app);
 
         // --- Fungsi Helper ---
         function debounce(func, wait) {
@@ -224,22 +302,41 @@
             };
         }
 
-        // --- Fungsi Inti Aplikasi ---
+        // --- FUNGSI UTAMA PERGANTIAN MODE ---
+        function switchGameMode(mode, isInitialLoad = false) {
+            state.settings.gameMode = mode;
+            if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
+
+            const isTTT = mode === 'TicTacToe';
+            dom.tttGame.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
+            dom.rpsGame.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
+            
+            dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
+            dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
+            
+            if (isTTT) {
+                initTicTacToe(isInitialLoad);
+            } else {
+                initRockPaperScissors();
+            }
+        }
+        
+        // --- LOGIKA TIC-TAC-TOE ---
+        function initTicTacToe(isInitialLoad) {
+            updateSlideDimensions();
+            if (isInitialLoad) {
+                toggleTttMode(state.settings.tttMode, true);
+            } else {
+                toggleTttMode(state.settings.tttMode);
+            }
+        }
 
         function updateSlideDimensions() {
-            // Lebar slide sekarang didasarkan pada #slider-stage yang sudah 100vw
             state.slideWidth = dom.sliderStage.getBoundingClientRect().width;
-            
-            // Javascript akan mengatur lebar individual slide agar sesuai
             const slides = dom.slideWrapper.querySelectorAll('.slide-container');
-            slides.forEach(slide => { 
-                // Kita tetap set width di JS agar kalkulasi transform X akurat
-                // Style CSS 'width: 100vw' memastikan tampilan awal benar
-                slide.style.width = `${state.slideWidth}px`;
-            });
-            
+            slides.forEach(slide => { slide.style.width = `${state.slideWidth}px`; });
             dom.peekCanvas.width = state.slideWidth;
-            dom.peekCanvas.height = state.slideWidth; // Tinggi canvas mengikuti lebar
+            dom.peekCanvas.height = state.slideWidth; 
             animateToSlide(state.currentSlide, 0);
         }
 
@@ -275,7 +372,7 @@
             });
         }
 
-        function resetGame() {
+        function resetTttGame() {
             state.boardData.fill(null);
             state.currentPlayer = 'X';
             state.gameFinished = false;
@@ -301,8 +398,7 @@
                 const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `permainan berakhir seri`;
                 dom.resultText.textContent = message;
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = 512;
-                tempCanvas.height = 512;
+                tempCanvas.width = 512; tempCanvas.height = 512;
                 drawOnCanvas(tempCanvas, state.boardData);
                 dom.boardImage.src = tempCanvas.toDataURL('image/png');
             } else {
@@ -310,8 +406,9 @@
             }
         }
         
+        // ... (semua fungsi TTT lainnya seperti startPeeking, handleManualGesture, dll tetap di sini)
         function startPeeking() {
-            if (state.gameFinished || state.settings.mode !== 'manual') return;
+            if (state.gameFinished || state.settings.tttMode !== 'manual') return;
             state.isPeeking = true;
             drawOnCanvas(dom.peekCanvas, state.boardData);
             dom.predictionSlide.classList.add(CLASS_NAMES.PEEKING);
@@ -361,34 +458,27 @@
 
         async function copyBase64ToClipboard(imageElement) {
             const base64Data = imageElement.src;
-            if (!base64Data || !base64Data.startsWith('data:image/png')) {
-                console.error("Data gambar tidak valid untuk disalin.");
-                return false;
-            }
+            if (!base64Data || !base64Data.startsWith('data:image/png')) return false;
             try {
                 await navigator.clipboard.writeText(base64Data);
-                console.log("Teks Base64 berhasil disalin!");
                 return true;
             } catch (err) {
-                console.warn("Metode salin modern gagal, mencoba fallback:", err);
                 try {
                     const textArea = document.createElement('textarea');
                     textArea.value = base64Data;
-                    textArea.style.position = 'fixed';
-                    textArea.style.opacity = '0';
+                    textArea.style.position = 'fixed'; textArea.style.opacity = '0';
                     document.body.appendChild(textArea);
                     textArea.select();
                     const successful = document.execCommand('copy');
                     document.body.removeChild(textArea);
                     return successful;
                 } catch (fallbackErr) {
-                    console.error("Fallback copy juga gagal:", fallbackErr);
                     return false;
                 }
             }
         }
         
-        // --- Event Handlers ---
+        // --- Event Handlers TTT---
         function handleTouchStart(e) {
             e.preventDefault();
             const touch = e.touches[0];
@@ -426,10 +516,7 @@
 
         async function handleTouchEnd(e) {
             clearTimeout(state.peekTimer);
-            if (state.isPeeking) {
-                stopPeeking();
-                return;
-            }
+            if (state.isPeeking) { stopPeeking(); return; }
             const endX = e.changedTouches[0].clientX;
             const endY = e.changedTouches[0].clientY;
             const deltaX = endX - state.touchStart.x;
@@ -446,14 +533,14 @@
                 } else if (e.target === dom.boardImage) {
                     await handleBoardClick();
                 }
-            } else if (state.settings.mode === 'manual' && !state.isDragging) {
+            } else if (state.settings.tttMode === 'manual' && !state.isDragging) {
                 handleManualGesture(deltaX, deltaY);
             }
             state.isDragging = false;
         }
         
         function handleDoubleTap() {
-            if (state.gameFinished || state.settings.mode !== 'manual') return;
+            if (state.gameFinished || state.settings.tttMode !== 'manual') return;
             const middleCell = 4;
             if (state.boardData[middleCell] === null) {
                 state.boardData[middleCell] = state.currentPlayer;
@@ -464,29 +551,30 @@
         async function handleBoardClick() {
             if (!state.gameFinished) return;
             const isSuccess = await copyBase64ToClipboard(dom.boardImage);
-            if (isSuccess && state.settings.shortcutName) {
+            if (isSuccess && state.settings.tttShortcutName) {
                 setTimeout(() => {
-                    window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.shortcutName)}`;
+                    window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.tttShortcutName)}`;
                 }, 100);
             }
         }
         
-        // --- Pengaturan & Mode ---
-        function toggleMode(newMode) {
-            state.settings.mode = newMode;
-            resetGame();
-            if (newMode === 'online') initializeFirebaseListener();
-            else if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
+        function toggleTttMode(newMode, isInitialLoad = false) {
+            state.settings.tttMode = newMode;
+            if (!isInitialLoad) resetTttGame();
+            if (newMode === 'online') initializeTttFirebaseListener();
+            else if (state.firebaseUnsubscribe) {
+                 state.firebaseUnsubscribe();
+                 state.firebaseUnsubscribe = null;
+            }
             
             const isOnline = newMode === 'online';
             dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isOnline);
             dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isOnline);
             dom.modeManualBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, !isOnline);
             dom.modeManualBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, isOnline);
-            dom.shortcutNameInput.value = state.settings.shortcutName || '';
         }
 
-        function initializeFirebaseListener() {
+        function initializeTttFirebaseListener() {
             if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
             const gameRef = ref(db, 'magic-game-state');
             state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
@@ -501,30 +589,162 @@
             });
         }
         
+        // --- LOGIKA ROCK-PAPER-SCISSORS ---
+        function initRockPaperScissors() {
+            resetRpsGame();
+            generateRpsPlan();
+            initializeRpsFirebaseListener();
+        }
+        
+        function resetRpsGame() {
+            state.isFirstRpsData = true;
+            state.rpsCurrentRound = 0;
+            state.rpsCurrentWins = 0;
+            state.rpsCurrentLoses = 0;
+            state.rpsGamePlan = [];
+            closeRpsFullscreen();
+        }
+
+        function generateRpsPlan() {
+            const plan = [];
+            for (let i = 0; i < state.settings.rpsWins; i++) plan.push('win');
+            for (let i = 0; i < state.settings.rpsLoses; i++) plan.push('lose');
+            const draws = state.settings.rpsRounds - plan.length;
+            for (let i = 0; i < draws; i++) plan.push('draw');
+            
+            // Shuffle the plan
+            for (let i = plan.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [plan[i], plan[j]] = [plan[j], plan[i]];
+            }
+            state.rpsGamePlan = plan;
+        }
+
+        function initializeRpsFirebaseListener() {
+            if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
+            const gameRef = ref(db, 'rock-paper-scissors');
+            state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
+                if (!snapshot.exists()) return;
+                
+                if (state.isFirstRpsData) {
+                    state.isFirstRpsData = false;
+                    return; // Abaikan data awal
+                }
+                
+                const data = snapshot.val();
+                const opponentChoice = data.userChoice;
+                if (opponentChoice) {
+                    handleRpsMagic(opponentChoice);
+                }
+            });
+        }
+
+        function handleRpsMagic(opponentChoice) {
+            if (state.rpsCurrentRound >= state.settings.rpsRounds) return;
+
+            const desiredOutcome = state.rpsGamePlan[state.rpsCurrentRound];
+            let myChoice;
+
+            if (desiredOutcome === 'win') {
+                if (opponentChoice === 'rock') myChoice = 'paper';
+                else if (opponentChoice === 'paper') myChoice = 'scissors';
+                else myChoice = 'rock';
+                state.rpsCurrentWins++;
+            } else if (desiredOutcome === 'lose') {
+                if (opponentChoice === 'rock') myChoice = 'scissors';
+                else if (opponentChoice === 'paper') myChoice = 'rock';
+                else myChoice = 'paper';
+                state.rpsCurrentLoses++;
+            } else { // draw
+                myChoice = opponentChoice;
+            }
+            
+            const myImageElement = dom[`${myChoice}Img`];
+            if(myImageElement) {
+                showRpsFullscreen(myImageElement.src);
+            }
+            
+            state.rpsCurrentRound++;
+
+            // Reset setelah 2 detik
+            setTimeout(() => {
+                closeRpsFullscreen();
+                if (state.rpsCurrentRound >= state.settings.rpsRounds) {
+                     console.log("RPS Game Selesai!");
+                }
+            }, 2000);
+        }
+
+        function showRpsFullscreen(imageSrc) {
+            dom.rpsFullscreenImage.src = imageSrc;
+            dom.rpsFullscreenOverlay.classList.remove('hidden');
+        }
+
+        function closeRpsFullscreen() {
+            dom.rpsFullscreenOverlay.classList.add('hidden');
+        }
+
+        // --- PENGATURAN & PENYIMPANAN ---
         function openSettings() { dom.settingsPanel.classList.remove(CLASS_NAMES.HIDDEN); }
         function closeSettings() { dom.settingsPanel.classList.add(CLASS_NAMES.HIDDEN); }
 
         function saveSettings() {
-            state.settings.shortcutName = dom.shortcutNameInput.value.trim();
+            // Simpan pengaturan umum
+            state.settings.gameMode = dom.gameModeSelect.value;
+            
+            // Simpan pengaturan TTT
+            state.settings.tttShortcutName = dom.shortcutNameInput.value.trim();
+            // tttMode sudah diupdate via toggleTttMode
+
+            // Simpan pengaturan RPS
+            let rounds = parseInt(dom.rpsRoundsInput.value) || 1;
+            rounds = Math.max(1, Math.min(5, rounds)); // Clamp between 1-5
+            let wins = parseInt(dom.rpsWinsInput.value) || 0;
+            let loses = parseInt(dom.rpsLosesInput.value) || 0;
+
+            if (wins + loses > rounds) {
+                alert("Jumlah target Menang & Kalah tidak boleh melebihi Jumlah Ronde.");
+                return;
+            }
+            dom.rpsRoundsInput.value = rounds;
+            state.settings.rpsRounds = rounds;
+            state.settings.rpsWins = Math.max(0, Math.min(rounds, wins));
+            state.settings.rpsLoses = Math.max(0, Math.min(rounds, loses));
+            dom.rpsWinsInput.value = state.settings.rpsWins;
+            dom.rpsLosesInput.value = state.settings.rpsLoses;
+
             localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
             closeSettings();
+            
+            // Re-initialize game mode in case settings changed
+            switchGameMode(state.settings.gameMode);
         }
 
         function loadSettings() {
             const savedSettings = localStorage.getItem('playerZeroSettings');
             if (savedSettings) {
-                const defaultSettings = { mode: 'online', shortcutName: '' };
+                const defaultSettings = { 
+                    gameMode: 'TicTacToe', tttMode: 'online', tttShortcutName: '',
+                    rpsRounds: 5, rpsWins: 0, rpsLoses: 0
+                };
                 state.settings = { ...defaultSettings, ...JSON.parse(savedSettings) };
             }
-            toggleMode(state.settings.mode);
+            // Update UI from loaded settings
+            dom.gameModeSelect.value = state.settings.gameMode;
+            dom.shortcutNameInput.value = state.settings.tttShortcutName || '';
+            dom.rpsRoundsInput.value = state.settings.rpsRounds;
+            dom.rpsWinsInput.value = state.settings.rpsWins;
+            dom.rpsLosesInput.value = state.settings.rpsLoses;
+            
+            switchGameMode(state.settings.gameMode, true);
         }
-
-        // --- Pendaftaran Service Worker & Trigger Update ---
+        
+        // --- PWA & Inisialisasi ---
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('./service-worker.js')
-                    .then(registration => console.log('Service Worker berhasil didaftarkan:', registration))
-                    .catch(error => console.log('Pendaftaran Service Worker gagal:', error));
+                    .then(reg => console.log('Service Worker terdaftar'))
+                    .catch(err => console.log('Pendaftaran Service Worker gagal:', err));
             }
         }
         
@@ -541,38 +761,46 @@
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.addEventListener('message', event => {
                     if (event.data && event.data.type === 'CACHE_UPDATED') {
-                        console.log('Menerima pesan update dari Service Worker.');
                         showUpdateNotification();
                     }
                 });
             }
         }
 
-        // --- Inisialisasi Event Listeners ---
         function setupEventListeners() {
-            const stage = dom.sliderStage;
-            stage.addEventListener('touchstart', handleTouchStart, { passive: false });
-            stage.addEventListener('touchmove', handleTouchMove, { passive: false });
-            stage.addEventListener('touchend', handleTouchEnd);
+            dom.sliderStage.addEventListener('touchstart', handleTouchStart, { passive: false });
+            dom.sliderStage.addEventListener('touchmove', handleTouchMove, { passive: false });
+            dom.sliderStage.addEventListener('touchend', handleTouchEnd);
             window.addEventListener('resize', debounce(updateSlideDimensions, 250));
             
             dom.settingsTrigger.addEventListener('click', openSettings);
             dom.closeSettingsBtn.addEventListener('click', closeSettings);
             dom.saveSettingsBtn.addEventListener('click', saveSettings);
 
-            dom.modeOnlineBtn.addEventListener('click', () => toggleMode('online'));
-            dom.modeManualBtn.addEventListener('click', () => toggleMode('manual'));
+            dom.gameModeSelect.addEventListener('change', (e) => {
+                const isTTT = e.target.value === 'TicTacToe';
+                dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
+                dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
+            });
+
+            dom.modeOnlineBtn.addEventListener('click', () => toggleTttMode('online'));
+            dom.modeManualBtn.addEventListener('click', () => toggleTttMode('manual'));
+
+            dom.rpsCloseFullscreenBtn.addEventListener('click', closeRpsFullscreen);
 
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') closeSettings();
             });
         }
         
-        // --- Inisialisasi Aplikasi ---
         function init() {
+            onAuthStateChanged(auth, user => {
+                if (!user) {
+                    signInAnonymously(auth).catch(err => console.error("Gagal login anonim:", err));
+                }
+            });
             loadSettings();
             setupEventListeners();
-            updateSlideDimensions();
             registerServiceWorker();
             listenForServiceWorkerUpdates();
         }
