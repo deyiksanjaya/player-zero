@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Prediction">
-    <link rel="apple-touch-icon" href="images/icons/icon-180x180.png">
+    <link rel="apple-touch-icon" href="/icons/icon-180x180.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,6 +138,10 @@
                     <label for="rps-loses-input" class="font-medium">Target Kalah</label>
                     <input type="number" id="rps-loses-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                 </div>
+                 <div>
+                    <label for="rps-draws-input" class="font-medium">Target Seri</label>
+                    <input type="number" id="rps-draws-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
             </div>
 
             <div class="mt-6 flex justify-end">
@@ -195,7 +199,6 @@
         const firebaseConfig = {
             apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
             authDomain: "player-zer0.firebaseapp.com",
-            // PERBAIKAN: Memperbaiki typo dari firebasedabase.app menjadi firebasedatabase.app
             databaseURL: "https://player-zer0-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "player-zer0",
             storageBucket: "player-zer0.appspot.com",
@@ -252,6 +255,7 @@
             rpsRoundsInput: document.getElementById('rps-rounds-input'),
             rpsWinsInput: document.getElementById('rps-wins-input'),
             rpsLosesInput: document.getElementById('rps-loses-input'),
+            rpsDrawsInput: document.getElementById('rps-draws-input'),
         };
 
         // --- State Aplikasi ---
@@ -263,9 +267,10 @@
                 rpsRounds: 5,
                 rpsWins: 0,
                 rpsLoses: 0,
+                rpsDraws: 0,
             },
             firebaseUnsubscribe: null,
-            isInitialRpsLoad: true, // PERBAIKAN: Flag untuk data awal RPS
+            isInitialRpsLoad: true,
             // TTT State
             boardData: Array(9).fill(null),
             currentPlayer: 'X',
@@ -399,7 +404,7 @@
             const isFull = state.boardData.every(cell => cell !== null);
             if (winner || isFull) {
                 state.gameFinished = true;
-                const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `permainan berakhir seri`;
+                const message = winner ? `saya tahu kalau di akhir, pemenangnya adalah ${winner}` : `saya sudah tau dari awal kalau permainan akan berakhir SERI`;
                 dom.resultText.textContent = message;
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = 512; tempCanvas.height = 512;
@@ -603,7 +608,7 @@
         }
         
         function resetRpsGame() {
-            state.isInitialRpsLoad = true; // PERBAIKAN: Reset flag di sini
+            state.isInitialRpsLoad = true;
             state.rpsCurrentRound = 0;
             state.rpsCurrentWins = 0;
             state.rpsCurrentLoses = 0;
@@ -615,8 +620,10 @@
             const plan = [];
             for (let i = 0; i < state.settings.rpsWins; i++) plan.push('win');
             for (let i = 0; i < state.settings.rpsLoses; i++) plan.push('lose');
-            const draws = state.settings.rpsRounds - plan.length;
-            for (let i = 0; i < draws; i++) plan.push('draw');
+            for (let i = 0; i < state.settings.rpsDraws; i++) plan.push('draw');
+            
+            const remainingRounds = state.settings.rpsRounds - plan.length;
+            for (let i = 0; i < remainingRounds; i++) plan.push('draw'); // Sisa ronde dijadikan seri
             
             // Shuffle the plan
             for (let i = plan.length - 1; i > 0; i--) {
@@ -631,30 +638,21 @@
                 state.firebaseUnsubscribe();
                 state.firebaseUnsubscribe = null;
             }
-            console.log("Memasang listener Firebase untuk RPS...");
             const gameRef = ref(db, 'rock-paper-scissors');
             state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
-                console.log("Data RPS diterima dari Firebase:", snapshot.val());
                 if (!snapshot.exists()) {
-                    console.log("Data tidak ada (snapshot kosong).");
                     return;
                 }
                 
-                // PERBAIKAN: Gunakan flag untuk mengabaikan data awal
                 if (state.isInitialRpsLoad) {
-                    console.log("Mengabaikan data awal saat memuat.");
                     state.isInitialRpsLoad = false;
                     return;
                 }
                 
-                console.log("Memproses data baru RPS...");
                 const data = snapshot.val();
                 const opponentChoice = data.userChoice;
                 if (opponentChoice) {
-                    console.log(`Pilihan lawan adalah: ${opponentChoice}. Menjalankan logika...`);
                     handleRpsMagic(opponentChoice);
-                } else {
-                    console.log("Tidak ditemukan 'userChoice' pada data baru.");
                 }
             });
         }
@@ -724,18 +722,21 @@
             rounds = Math.max(1, Math.min(5, rounds)); // Clamp between 1-5
             let wins = parseInt(dom.rpsWinsInput.value) || 0;
             let loses = parseInt(dom.rpsLosesInput.value) || 0;
+            let draws = parseInt(dom.rpsDrawsInput.value) || 0;
 
-            if (wins + loses > rounds) {
+            if (wins + loses + draws > rounds) {
                 // Menggunakan alert() karena ini adalah feedback kritis untuk pengguna
-                alert("Jumlah target Menang & Kalah tidak boleh melebihi Jumlah Ronde.");
+                alert("Jumlah target Menang, Kalah, & Seri tidak boleh melebihi Jumlah Ronde.");
                 return;
             }
             dom.rpsRoundsInput.value = rounds;
             state.settings.rpsRounds = rounds;
             state.settings.rpsWins = Math.max(0, Math.min(rounds, wins));
             state.settings.rpsLoses = Math.max(0, Math.min(rounds, loses));
+            state.settings.rpsDraws = Math.max(0, Math.min(rounds, draws));
             dom.rpsWinsInput.value = state.settings.rpsWins;
             dom.rpsLosesInput.value = state.settings.rpsLoses;
+            dom.rpsDrawsInput.value = state.settings.rpsDraws;
 
             localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
             closeSettings();
@@ -749,7 +750,7 @@
             if (savedSettings) {
                 const defaultSettings = { 
                     gameMode: 'TicTacToe', tttMode: 'online', tttShortcutName: '',
-                    rpsRounds: 5, rpsWins: 0, rpsLoses: 0
+                    rpsRounds: 5, rpsWins: 0, rpsLoses: 0, rpsDraws: 0
                 };
                 state.settings = { ...defaultSettings, ...JSON.parse(savedSettings) };
             }
@@ -759,6 +760,7 @@
             dom.rpsRoundsInput.value = state.settings.rpsRounds;
             dom.rpsWinsInput.value = state.settings.rpsWins;
             dom.rpsLosesInput.value = state.settings.rpsLoses;
+            dom.rpsDrawsInput.value = state.settings.rpsDraws;
             
             // Panggil switchGameMode setelah memastikan UI pengaturan TTT/RPS terlihat/tersembunyi dengan benar
             const isTTT = state.settings.gameMode === 'TicTacToe';
