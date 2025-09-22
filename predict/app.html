@@ -434,7 +434,8 @@
         // --- TIC-TAC-TOE LOGIC ---
         function initTicTacToe(isInitialLoad) { 
             updateSlideDimensions(); 
-            toggleTttMode(state.settings.tttMode, isInitialLoad); 
+            toggleTttMode(state.settings.tttMode, isInitialLoad);
+            updatePredictionTextUI(); // FIX: Ensure text is updated on init
         }
 
         function updateSlideDimensions() {
@@ -850,7 +851,7 @@
         // --- ROCK-PAPER-SCISSORS LOGIC ---
         function initRockPaperScissors(isInitialLoad) {
             resetRpsGame();
-            generateRpsPlan();
+            generateRpsPlan(); // FIX: Ensure plan is generated on every init
             initializeRpsFirebaseListener();
             if(isInitialLoad) toggleRpsPlayMode(state.settings.rpsPlayMode, true);
         }
@@ -1009,6 +1010,29 @@
             switchGameMode(state.settings.gameMode);
         }
 
+        function updateSettingsPanelUI() {
+            const { tttMode, tttShortcutInputMode, rpsPlayMode } = state.settings;
+
+            dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, tttMode === 'online');
+            dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, tttMode !== 'online');
+            dom.modeManualBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, tttMode === 'manual');
+            dom.modeManualBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, tttMode !== 'manual');
+            dom.modeDirectShortcutBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, tttMode === 'directShortcut');
+            dom.modeDirectShortcutBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, tttMode !== 'directShortcut');
+
+            dom.shortcutModeAutoBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, tttShortcutInputMode === 'auto');
+            dom.shortcutModeAutoBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, tttShortcutInputMode !== 'auto');
+            dom.shortcutModeSwipeBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, tttShortcutInputMode !== 'auto');
+            dom.shortcutModeSwipeBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, tttShortcutInputMode === 'auto');
+
+            dom.rpsModeMagicianBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, rpsPlayMode === 'magicianFirst');
+            dom.rpsModeMagicianBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, rpsPlayMode !== 'magicianFirst');
+            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, rpsPlayMode === 'spectatorFirst');
+            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, rpsPlayMode !== 'spectatorFirst');
+            dom.rpsModeMirroringBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, rpsPlayMode === 'mirroring');
+            dom.rpsModeMirroringBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, rpsPlayMode !== 'mirroring');
+        }
+
         function loadSettings() {
             const saved = localStorage.getItem('playerZeroSettings');
             if (saved) {
@@ -1021,8 +1045,7 @@
                 };
                 state.settings = { ...defaults, ...JSON.parse(saved) };
             }
-            // This function should ONLY update the form fields. 
-            // The logic is applied separately in init().
+            
             dom.gameModeSelect.value = state.settings.gameMode;
             dom.shortcutNameInput.value = state.settings.tttShortcutName || '';
             dom.predictionTextInput.value = state.settings.tttPredictionText;
@@ -1032,6 +1055,8 @@
             dom.rpsWinsInput.value = state.settings.rpsWins;
             dom.rpsLosesInput.value = state.settings.rpsLoses; 
             dom.rpsDrawsInput.value = state.settings.rpsDraws;
+            
+            updateSettingsPanelUI(); // FIX: Sync button styles with loaded state
         }
         
         // --- PWA & Initialization ---
@@ -1100,8 +1125,8 @@
         
         function init() {
             onAuthStateChanged(auth, user => { if (!user) signInAnonymously(auth); });
-            loadSettings(); // Step 1: Just load data into state and form inputs.
-            switchGameMode(state.settings.gameMode, true); // Step 2: Apply all logic and UI setup based on the loaded state.
+            loadSettings(); // Step 1: Load data into state, form inputs, and update settings panel visuals.
+            switchGameMode(state.settings.gameMode, true); // Step 2: Initialize the correct game view, which now applies logic correctly.
             setupEventListeners();
             registerServiceWorker();
             listenForServiceWorkerUpdates();
