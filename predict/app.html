@@ -218,40 +218,43 @@
         </div>
     </div>
 
-    <!-- Tic-Tac-Toe Game Container -->
-    <main id="tictactoe-game">
-        <div id="peek-board-container">
-            <canvas id="peek-canvas"></canvas>
-        </div>
-        <div id="slide-wrapper">
-            <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
-                <span id="prediction-text-display">my prediction..</span>
+    <!-- This container will hold the currently active game view -->
+    <div id="game-viewport" class="w-full h-full flex items-center justify-center">
+        <!-- Tic-Tac-Toe Game Container -->
+        <main id="tictactoe-game">
+            <div id="peek-board-container">
+                <canvas id="peek-canvas"></canvas>
             </div>
-            <div class="slide-container text-2xl font-semibold text-center">
-                <h2 id="result-text" class="px-8"></h2>
+            <div id="slide-wrapper">
+                <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
+                    <span id="prediction-text-display">my prediction..</span>
+                </div>
+                <div class="slide-container text-2xl font-semibold text-center">
+                    <h2 id="result-text" class="px-8"></h2>
+                </div>
+                <div class="slide-container">
+                    <img id="board-image" alt="Final Game Board" class="w-full h-full object-contain">
+                </div>
             </div>
-            <div class="slide-container">
-                <img id="board-image" alt="Final Game Board" class="w-full h-full object-contain">
-            </div>
-        </div>
-    </main>
+        </main>
 
-    <!-- Direct Shortcut Mode Display -->
-    <div id="direct-shortcut-mode-display" class="hidden w-full h-full flex items-center justify-center cursor-pointer p-4">
-        <p id="direct-shortcut-status-text" class="text-2xl font-semibold text-center text-gray-400"></p>
-    </div>
+        <!-- Direct Shortcut Mode Display -->
+        <div id="direct-shortcut-mode-display" class="hidden w-full h-full flex items-center justify-center cursor-pointer p-4">
+            <p id="direct-shortcut-status-text" class="text-2xl font-semibold text-center text-gray-400"></p>
+        </div>
 
-    <!-- Rock-Paper-Scissors Game Container -->
-    <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
-        <div id="rps-image-container" class="flex flex-col flex-wrap justify-center gap-8">
-            <div id="rock-wrapper" class="rps-wrapper">
-                <img id="rock" src="/icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
-            </div>
-            <div id="paper-wrapper" class="rps-wrapper">
-                <img id="paper" src="/icons/rps/paper.png" alt="Paper" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
-            </div>
-            <div id="scissors-wrapper" class="rps-wrapper">
-                <img id="scissors" src="/icons/rps/scissors.png" alt="Scissors" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
+        <!-- Rock-Paper-Scissors Game Container -->
+        <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
+            <div id="rps-image-container" class="flex flex-col flex-wrap justify-center gap-8">
+                <div id="rock-wrapper" class="rps-wrapper">
+                    <img id="rock" src="/icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
+                </div>
+                <div id="paper-wrapper" class="rps-wrapper">
+                    <img id="paper" src="/icons/rps/paper.png" alt="Paper" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
+                </div>
+                <div id="scissors-wrapper" class="rps-wrapper">
+                    <img id="scissors" src="/icons/rps/scissors.png" alt="Scissors" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
+                </div>
             </div>
         </div>
     </div>
@@ -309,8 +312,8 @@
             closeSettingsBtn: document.getElementById('close-settings-btn'),
             updateNotification: document.getElementById('update-notification'),
             gameModeSelect: document.getElementById('game-mode-select'),
+            gameViewport: document.getElementById('game-viewport'), // Main container for events
             tttGame: document.getElementById('tictactoe-game'),
-            sliderStage: document.getElementById('tictactoe-game'), 
             slideWrapper: document.getElementById('slide-wrapper'),
             predictionSlide: document.getElementById('prediction-slide'),
             peekBoardContainer: document.getElementById('peek-board-container'),
@@ -435,7 +438,7 @@
         }
 
         function updateSlideDimensions() {
-            state.slideWidth = dom.sliderStage.getBoundingClientRect().width;
+            state.slideWidth = dom.tttGame.getBoundingClientRect().width;
             const slides = dom.slideWrapper.querySelectorAll('.slide-container');
             slides.forEach(slide => {
                 slide.style.width = `${state.slideWidth}px`;
@@ -641,91 +644,105 @@
                 }
             }
         }
-        
+
+        // --- REFACTORED UNIFIED TOUCH HANDLERS ---
         function handleTouchStart(e) {
             if (state.settings.gameMode !== 'TicTacToe') return;
             e.preventDefault();
-            const target = e.currentTarget;
+
             state.touchStart.x = e.touches[0].clientX;
             state.touchStart.y = e.touches[0].clientY;
             state.isDragging = false;
             clearTimeout(state.peekTimer);
-        
-            if (target === dom.sliderStage && state.settings.tttMode !== 'directShortcut') {
-                 state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
-                 if (state.gameFinished) {
-                    dom.slideWrapper.style.transition = 'none';
-                    const totalTranslation = (state.slideWidth * state.currentSlide) + (SLIDE_GAP * state.currentSlide);
-                    state.initialTranslate = -totalTranslation;
-                 }
-                 const now = Date.now();
-                 if (now - state.lastTapTime <= DOUBLE_TAP_TIMEOUT) {
-                    handleDoubleTap();
-                    state.lastTapTime = 0;
-                 } else {
-                    state.lastTapTime = now;
-                 }
-            } else if (target === dom.directShortcutModeDisplay && state.settings.tttShortcutInputMode === 'swipe') {
-                state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
+
+            // Handle peeking (hold gesture)
+            state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
+
+            // Handle sliding interaction preparation
+            if (state.gameFinished && state.settings.tttMode !== 'directShortcut') {
+                dom.slideWrapper.style.transition = 'none';
+                const totalTranslation = (state.slideWidth * state.currentSlide) + (SLIDE_GAP * state.currentSlide);
+                state.initialTranslate = -totalTranslation;
+            }
+
+            // Handle double tap
+            const now = Date.now();
+            if (now - state.lastTapTime <= DOUBLE_TAP_TIMEOUT) {
+                handleDoubleTap();
+                state.lastTapTime = 0; // Reset after double tap
+            } else {
+                state.lastTapTime = now;
             }
         }
 
         function handleTouchMove(e) {
-             if (state.settings.gameMode !== 'TicTacToe') return;
-             e.preventDefault();
-             const target = e.currentTarget;
-             const deltaX = e.touches[0].clientX - state.touchStart.x;
-             const deltaY = e.touches[0].clientY - state.touchStart.y;
-             if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) state.isDragging = true;
+            if (state.settings.gameMode !== 'TicTacToe' || !e.touches.length) return;
+            e.preventDefault();
 
-             clearTimeout(state.peekTimer);
-             if (state.isPeeking) stopPeeking();
+            const deltaX = e.touches[0].clientX - state.touchStart.x;
+            const deltaY = e.touches[0].clientY - state.touchStart.y;
 
-             if (target === dom.sliderStage && state.gameFinished && state.isDragging) {
-                 dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + deltaX}px)`;
-             }
+            // Determine if it's a drag gesture
+            if (!state.isDragging && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+                state.isDragging = true;
+                // If dragging starts, it's not a hold-to-peek gesture
+                clearTimeout(state.peekTimer);
+                if (state.isPeeking) stopPeeking();
+            }
+
+            // Handle sliding animation during drag
+            if (state.isDragging && state.gameFinished && state.settings.tttMode !== 'directShortcut') {
+                dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + deltaX}px)`;
+            }
         }
 
         async function handleTouchEnd(e) {
             if (state.settings.gameMode !== 'TicTacToe') return;
-            const target = e.currentTarget;
 
+            // Always stop peeking attempt on touch end
             clearTimeout(state.peekTimer);
             if (state.isPeeking) {
                 stopPeeking();
-                state.isDragging = false;
+                state.isDragging = false; // It was a hold, not a drag
                 return;
             }
 
             const deltaX = e.changedTouches[0].clientX - state.touchStart.x;
             const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
+            const currentTttMode = state.settings.tttMode;
 
-            if (target === dom.sliderStage && state.settings.tttMode !== 'directShortcut') {
-                if (state.gameFinished) {
-                    if (state.isDragging) {
-                        if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
-                            if (deltaX < 0) animateToSlide(state.currentSlide + 1);
-                            else animateToSlide(state.currentSlide - 1);
-                        } else {
-                            animateToSlide(state.currentSlide);
-                        }
-                    } else if (e.target === dom.boardImage) {
-                        await handleBoardClick();
-                    }
-                } else if (state.settings.tttMode === 'manual' && state.isDragging) {
+            // Check for manual swipe input gestures
+            if (state.isDragging) {
+                const isManualSwipe = currentTttMode === 'manual';
+                const isShortcutSwipe = currentTttMode === 'directShortcut' && state.settings.tttShortcutInputMode === 'swipe';
+                
+                if (isManualSwipe || isShortcutSwipe) {
                     handleManualGesture(deltaX, deltaY);
                 }
-            } else if (target === dom.directShortcutModeDisplay) {
-                 if (state.isDragging && state.settings.tttShortcutInputMode === 'swipe') {
-                    handleManualGesture(deltaX, deltaY);
-                 } else if (!state.isDragging && state.gameFinished) { // TAP
-                    await handleBoardClick();
-                    resetTttGame();
-                 }
             }
+
+            // Handle slide navigation after game is finished
+            if (state.gameFinished && currentTttMode !== 'directShortcut') {
+                if (state.isDragging) {
+                    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+                        animateToSlide(state.currentSlide + (deltaX < 0 ? 1 : -1));
+                    } else {
+                        animateToSlide(state.currentSlide);
+                    }
+                } else if (e.target === dom.boardImage) { // It was a tap on the board image
+                    await handleBoardClick();
+                }
+            }
+            
+            // Handle tap in shortcut mode to trigger the shortcut
+            if (!state.isDragging && state.gameFinished && currentTttMode === 'directShortcut') {
+                await handleBoardClick();
+                resetTttGame();
+            }
+            
             state.isDragging = false;
         }
-
+        
         function handleDoubleTap() {
             if (state.settings.tttMode === 'online') {
                 resetTttGame();
@@ -981,7 +998,8 @@
             let draws = parseInt(dom.rpsDrawsInput.value) || 0;
 
             if (state.settings.rpsPlayMode !== 'mirroring' && (wins + loses + draws > rounds)) {
-                alert("The sum of target Wins, Losses, & Draws cannot exceed the Number of Rounds."); return;
+                // In a real app, use a custom modal instead of alert.
+                console.error("The sum of target Wins, Losses, & Draws cannot exceed the Number of Rounds."); return;
             }
             state.settings.rpsRounds = rounds; state.settings.rpsWins = wins; state.settings.rpsLoses = loses; state.settings.rpsDraws = draws;
             dom.rpsRoundsInput.value = rounds; dom.rpsWinsInput.value = wins; dom.rpsLosesInput.value = loses; dom.rpsDrawsInput.value = draws;
@@ -1046,14 +1064,10 @@
             }
         }
         function setupEventListeners() {
-            dom.sliderStage.addEventListener('touchstart', handleTouchStart, { passive: false });
-            dom.sliderStage.addEventListener('touchmove', handleTouchMove, { passive: false });
-            dom.sliderStage.addEventListener('touchend', handleTouchEnd);
-            
-            dom.directShortcutModeDisplay.addEventListener('touchstart', handleTouchStart, { passive: false });
-            dom.directShortcutModeDisplay.addEventListener('touchmove', handleTouchMove, { passive: false });
-            dom.directShortcutModeDisplay.addEventListener('touchend', handleTouchEnd);
-
+            // Attach TTT touch events to the main game viewport
+            dom.gameViewport.addEventListener('touchstart', handleTouchStart, { passive: false });
+            dom.gameViewport.addEventListener('touchmove', handleTouchMove, { passive: false });
+            dom.gameViewport.addEventListener('touchend', handleTouchEnd);
 
             window.addEventListener('resize', debounce(updateSlideDimensions, 250));
             
