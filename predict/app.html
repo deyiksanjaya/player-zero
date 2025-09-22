@@ -436,11 +436,12 @@
                 const prefix = state.settings.tttResultPrefix;
                 const message = winner ? `${prefix}... the winner would be ${winner}` : `${prefix}... the game would end in a draw`;
                 dom.resultText.textContent = message;
-                
-                // Use peekCanvas directly instead of creating a new one
                 drawOnCanvas(dom.peekCanvas, state.boardData);
                 dom.boardImage.src = dom.peekCanvas.toDataURL('image/png');
-                animateToSlide(1);
+                
+                if (state.settings.tttMode === 'manual') {
+                    animateToSlide(1);
+                }
             } else {
                 state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
             }
@@ -477,6 +478,7 @@
         }
 
         function handleManualGesture(deltaX, deltaY) {
+            if (state.gameFinished) return;
             if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
             const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
             const direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
@@ -539,6 +541,7 @@
         }
         
         function handleTouchStart(e) {
+            if(state.settings.gameMode !== 'TicTacToe') return;
             e.preventDefault();
             const touch = e.touches[0];
             state.touchStart.x = touch.clientX;
@@ -561,19 +564,26 @@
         }
 
         function handleTouchMove(e) {
+            if(state.settings.gameMode !== 'TicTacToe') return;
             e.preventDefault();
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - state.touchStart.x;
+            const deltaY = touch.clientY - state.touchStart.y;
+
+            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                 state.isDragging = true;
+            }
+
             clearTimeout(state.peekTimer);
             if (state.isPeeking) stopPeeking();
-            if (!state.gameFinished) return;
-            const currentX = e.touches[0].clientX;
-            const diffX = currentX - state.touchStart.x;
-            if (Math.abs(diffX) > 10) state.isDragging = true;
-            if (state.isDragging) {
-                dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + diffX}px)`;
+
+            if (state.gameFinished && state.isDragging) {
+                dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + deltaX}px)`;
             }
         }
 
         async function handleTouchEnd(e) {
+            if(state.settings.gameMode !== 'TicTacToe') return;
             clearTimeout(state.peekTimer);
             if (state.isPeeking) {
                 stopPeeking();
@@ -592,10 +602,10 @@
                     } else {
                         animateToSlide(state.currentSlide);
                     }
-                } else if (e.target === dom.boardImage) {
+                } else if (e.target === dom.boardImage) { // This is a TAP on the image
                     await handleBoardClick();
                 }
-            } else if (state.settings.tttMode === 'manual' && !state.isDragging) {
+            } else if (state.settings.tttMode === 'manual' && state.isDragging) {
                 handleManualGesture(deltaX, deltaY);
             }
             state.isDragging = false;
@@ -637,12 +647,15 @@
             if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); }
             const gameRef = ref(db, 'magic-game-state');
             state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
-                if (!snapshot.exists() || state.gameFinished) return;
+                if (!snapshot.exists()) return;
+                
+                const wasFinished = state.gameFinished;
+                if (wasFinished) return;
+
                 const gameState = snapshot.val();
                 if (gameState && gameState.board) {
                     for (let i = 0; i < 9; i++) state.boardData[i] = gameState.board[i] || null;
                     
-                    // Always draw the peek canvas to see live updates
                     drawOnCanvas(dom.peekCanvas, state.boardData); 
 
                     if (checkWinner(state.boardData) || state.boardData.every(cell => cell !== null)) {
