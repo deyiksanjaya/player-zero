@@ -118,6 +118,18 @@
         .caret-white {
             caret-color: white;
         }
+        .scrollable-input {
+            white-space: nowrap;
+            overflow-x: auto;
+        }
+        /* Hide scrollbar for cleaner look */
+        .scrollable-input::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollable-input {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
     </style>
 </head>
 <body class="w-screen h-screen flex justify-center items-center">
@@ -156,21 +168,21 @@
                 </div>
                 <div>
                     <label for="prediction-text-input" class="font-medium">Prediction Text</label>
-                    <input type="text" id="prediction-text-input" placeholder="e.g., I predict..." class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                    <input type="text" id="prediction-text-input" placeholder="e.g., I predict..." class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
                 </div>
                 <div>
                     <label for="winner-result-text-input" class="font-medium">Winner Result Text ($winner)</label>
                     <div class="relative w-full mt-1 bg-gray-700 border border-gray-600 rounded-md">
-                        <div id="winner-highlight-layer" class="absolute inset-0 p-2 pointer-events-none overflow-hidden whitespace-pre text-white"></div>
+                        <div id="winner-highlight-layer" class="absolute inset-0 p-2 pointer-events-none overflow-hidden whitespace-nowrap text-white"></div>
                         <input type="text" id="winner-result-text-input"
                                placeholder="e.g., $winner takes the game!"
-                               class="relative z-10 w-full p-2 bg-transparent border-none rounded-md text-transparent caret-white focus:ring-0 focus:outline-none"
+                               class="scrollable-input relative z-10 w-full p-2 bg-transparent border-none rounded-md text-transparent caret-white focus:ring-0 focus:outline-none"
                                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
                     </div>
                 </div>
                  <div>
                     <label for="draw-result-text-input" class="font-medium">Draw Result Text</label>
-                    <input type="text" id="draw-result-text-input" placeholder="e.g., A classic draw." class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                    <input type="text" id="draw-result-text-input" placeholder="e.g., A classic draw." class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
                 </div>
             </div>
 
@@ -420,7 +432,7 @@
             dom.slideWrapper.style.transform = `translateX(-${totalTranslation}px)`;
         }
 
-        function drawOnCanvas(canvas, boardData) {
+        function drawOnCanvas(canvas, boardData, winningCombination = null) {
             const size = canvas.width;
             canvas.height = size;
             const ctx = canvas.getContext('2d');
@@ -443,29 +455,55 @@
                 ctx.fillStyle = value === 'X' ? '#EF4444' : '#3B82F6';
                 ctx.fillText(value, x, y);
             });
+
+            if (winningCombination) {
+                const winner = boardData[winningCombination[0]];
+                ctx.strokeStyle = winner === 'X' ? '#EF4444' : '#3B82F6';
+                ctx.lineWidth = 10;
+                ctx.lineCap = 'round';
+
+                const getCoords = (index) => {
+                    const row = Math.floor(index / 3);
+                    const col = index % 3;
+                    return {
+                        x: col * cellSize + cellSize / 2,
+                        y: row * cellSize + cellSize / 2,
+                    };
+                };
+
+                const startCoords = getCoords(winningCombination[0]);
+                const endCoords = getCoords(winningCombination[2]);
+                
+                ctx.beginPath();
+                ctx.moveTo(startCoords.x, startCoords.y);
+                ctx.lineTo(endCoords.x, endCoords.y);
+                ctx.stroke();
+            }
         }
 
         function checkWinner(board) {
             for (const combination of WINNING_COMBINATIONS) {
                 const [a, b, c] = combination;
-                if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return { winner: board[a], combination };
+                }
             }
             return null;
         }
 
         function handlePostMove() {
-            const winner = checkWinner(state.boardData);
+            const winnerInfo = checkWinner(state.boardData);
             const isFull = state.boardData.every(cell => cell !== null);
-            if (winner || isFull) {
+            if (winnerInfo || isFull) {
                 state.gameFinished = true;
                 let message;
-                if (winner) {
-                    message = state.settings.tttWinnerResultText.replace('$winner', winner);
+                if (winnerInfo) {
+                    message = state.settings.tttWinnerResultText.replace('$winner', winnerInfo.winner);
                 } else {
                     message = state.settings.tttDrawText;
                 }
                 dom.resultText.textContent = message;
-                drawOnCanvas(dom.peekCanvas, state.boardData);
+                drawOnCanvas(dom.peekCanvas, state.boardData, winnerInfo ? winnerInfo.combination : null);
                 dom.boardImage.src = dom.peekCanvas.toDataURL('image/png');
             } else {
                 state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
