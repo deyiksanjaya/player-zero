@@ -290,7 +290,8 @@
         
         // --- Constants ---
         const WINNING_COMBINATIONS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
-        const SWIPE_THRESHOLD = 50;
+        const SLIDE_THRESHOLD = 50;       // For slide navigation (large)
+        const INPUT_SWIPE_THRESHOLD = 18; // For game input (more sensitive)
         const DOUBLE_TAP_TIMEOUT = 300;
         const HOLD_TO_PEEK_DELAY = 250;
         const SLIDE_GAP = 20;
@@ -590,7 +591,7 @@
 
         function handleManualGesture(deltaX, deltaY) {
             if (state.gameFinished) return;
-            // The threshold check is now done by the caller (handleTouchEnd)
+            
             const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
             const direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
             const gestureMap = {
@@ -683,15 +684,18 @@
             const deltaX = e.touches[0].clientX - state.touchStart.x;
             const deltaY = e.touches[0].clientY - state.touchStart.y;
 
-            // Determine if it's a drag gesture
-            if (!state.isDragging && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+            // Start dragging threshold: more permissive when in swipe-input mode
+            const isShortcutSwipeMode = state.settings.tttMode === 'directShortcut' && state.settings.tttShortcutInputMode === 'swipe';
+            const dragStartThreshold = isShortcutSwipeMode ? 8 : 10;
+
+            if (!state.isDragging && (Math.abs(deltaX) > dragStartThreshold || Math.abs(deltaY) > dragStartThreshold)) {
                 state.isDragging = true;
                 // If dragging starts, it's not a hold-to-peek gesture
                 clearTimeout(state.peekTimer);
                 if (state.isPeeking) stopPeeking();
             }
 
-            // Handle sliding animation during drag
+            // Handle sliding animation during drag (only for slide navigation)
             if (state.isDragging && state.gameFinished && state.settings.tttMode !== 'directShortcut') {
                 dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + deltaX}px)`;
             }
@@ -710,31 +714,35 @@
 
             const deltaX = e.changedTouches[0].clientX - state.touchStart.x;
             const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
+            const absDX = Math.abs(deltaX);
+            const absDY = Math.abs(deltaY);
             const currentTttMode = state.settings.tttMode;
+
+            // Determine which threshold to use depending on context:
+            const inputSwipeSignificant = Math.max(absDX, absDY) > INPUT_SWIPE_THRESHOLD;
+            const slideSwipeSignificant = Math.max(absDX, absDY) > SLIDE_THRESHOLD;
 
             if (state.isDragging) {
                 // --- DRAG END LOGIC ---
-                const isSignificantSwipe = Math.abs(deltaX) > SWIPE_THRESHOLD || Math.abs(deltaY) > SWIPE_THRESHOLD;
-
                 // Check if we are in a mode that accepts swipe gestures for game input.
-                const isManualInputMode = (!state.gameFinished) && 
-                                          ((currentTttMode === 'manual') || 
+                const isManualInputMode = (!state.gameFinished) &&
+                                          ((currentTttMode === 'manual') ||
                                            (currentTttMode === 'directShortcut' && state.settings.tttShortcutInputMode === 'swipe'));
 
-                // Priority 1: Handle Manual Gesture Input
-                if (isManualInputMode && isSignificantSwipe) {
+                // Priority 1: Handle Manual / Shortcut-Swipe Gesture Input (use INPUT_SWIPE_THRESHOLD)
+                if (isManualInputMode && inputSwipeSignificant) {
                     handleManualGesture(deltaX, deltaY);
-                } 
-                // Priority 2: Handle Slide Navigation
+                }
+                // Priority 2: Handle Slide Navigation (use SLIDE_THRESHOLD)
                 else if (state.gameFinished && currentTttMode !== 'directShortcut') {
-                    if (isSignificantSwipe) {
+                    if (slideSwipeSignificant) {
+                        // left swipe => next slide, right swipe => previous slide
                         animateToSlide(state.currentSlide + (deltaX < 0 ? 1 : -1));
                     } else {
-                        animateToSlide(state.currentSlide); // Snap back if not a full swipe
+                        animateToSlide(state.currentSlide); // Snap back if not a full slide swipe
                     }
                 }
-                 // If it's a drag that doesn't meet any criteria (e.g., small drag in shortcut mode), do nothing.
-
+                // Otherwise: small drag in a mode that does not accept it -> snap back / ignore
             } else {
                 // --- TAP LOGIC (NOT A DRAG) ---
                 
@@ -743,13 +751,13 @@
                     await handleBoardClick();
                 }
                 
-                // Tap in shortcut mode to run shortcut and reset
+                // Tap in directShortcut mode to run shortcut and reset
                 if (state.gameFinished && currentTttMode === 'directShortcut') {
                     await handleBoardClick();
                     resetTttGame();
                 }
             }
-            
+
             state.isDragging = false;
         }
         
