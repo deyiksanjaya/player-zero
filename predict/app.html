@@ -590,7 +590,7 @@
 
         function handleManualGesture(deltaX, deltaY) {
             if (state.gameFinished) return;
-            if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
+            // The threshold check is now done by the caller (handleTouchEnd)
             const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
             const direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
             const gestureMap = {
@@ -712,33 +712,42 @@
             const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
             const currentTttMode = state.settings.tttMode;
 
-            // Check for manual swipe input gestures
             if (state.isDragging) {
-                const isManualSwipe = currentTttMode === 'manual';
-                const isShortcutSwipe = currentTttMode === 'directShortcut' && state.settings.tttShortcutInputMode === 'swipe';
-                
-                if (isManualSwipe || isShortcutSwipe) {
-                    handleManualGesture(deltaX, deltaY);
-                }
-            }
+                // --- DRAG END LOGIC ---
+                const isSignificantSwipe = Math.abs(deltaX) > SWIPE_THRESHOLD || Math.abs(deltaY) > SWIPE_THRESHOLD;
 
-            // Handle slide navigation after game is finished
-            if (state.gameFinished && currentTttMode !== 'directShortcut') {
-                if (state.isDragging) {
-                    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+                // Check if we are in a mode that accepts swipe gestures for game input.
+                const isManualInputMode = (!state.gameFinished) && 
+                                          ((currentTttMode === 'manual') || 
+                                           (currentTttMode === 'directShortcut' && state.settings.tttShortcutInputMode === 'swipe'));
+
+                // Priority 1: Handle Manual Gesture Input
+                if (isManualInputMode && isSignificantSwipe) {
+                    handleManualGesture(deltaX, deltaY);
+                } 
+                // Priority 2: Handle Slide Navigation
+                else if (state.gameFinished && currentTttMode !== 'directShortcut') {
+                    if (isSignificantSwipe) {
                         animateToSlide(state.currentSlide + (deltaX < 0 ? 1 : -1));
                     } else {
-                        animateToSlide(state.currentSlide);
+                        animateToSlide(state.currentSlide); // Snap back if not a full swipe
                     }
-                } else if (e.target === dom.boardImage) { // It was a tap on the board image
+                }
+                 // If it's a drag that doesn't meet any criteria (e.g., small drag in shortcut mode), do nothing.
+
+            } else {
+                // --- TAP LOGIC (NOT A DRAG) ---
+                
+                // Tap on board image (in manual/online mode) to copy/run shortcut
+                if (state.gameFinished && currentTttMode !== 'directShortcut' && e.target === dom.boardImage) {
                     await handleBoardClick();
                 }
-            }
-            
-            // Handle tap in shortcut mode to trigger the shortcut
-            if (!state.isDragging && state.gameFinished && currentTttMode === 'directShortcut') {
-                await handleBoardClick();
-                resetTttGame();
+                
+                // Tap in shortcut mode to run shortcut and reset
+                if (state.gameFinished && currentTttMode === 'directShortcut') {
+                    await handleBoardClick();
+                    resetTttGame();
+                }
             }
             
             state.isDragging = false;
