@@ -64,6 +64,7 @@
         #peek-board-container {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 60; /* Ensure it's on top */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -219,9 +220,6 @@
 
     <!-- Tic-Tac-Toe Game Container -->
     <main id="tictactoe-game">
-        <div id="peek-board-container">
-            <canvas id="peek-canvas"></canvas>
-        </div>
         <div id="slide-wrapper">
             <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
                 <span id="prediction-text-display">my prediction..</span>
@@ -234,6 +232,11 @@
             </div>
         </div>
     </main>
+
+    <!-- This container is now independent -->
+    <div id="peek-board-container">
+        <canvas id="peek-canvas"></canvas>
+    </div>
 
     <!-- Direct Shortcut Mode Display -->
     <div id="direct-shortcut-mode-display" class="hidden w-full h-full flex items-center justify-center cursor-pointer p-4">
@@ -559,18 +562,28 @@
         }
 
         function startPeeking() {
-            if (state.gameFinished || state.settings.tttMode !== 'manual') return;
+            const isManualMode = state.settings.tttMode === 'manual';
+            const isShortcutSwipeMode = state.settings.tttMode === 'directShortcut' && state.settings.tttShortcutInputMode === 'swipe';
+
+            if (state.gameFinished || !(isManualMode || isShortcutSwipeMode)) return;
+
             state.isPeeking = true;
             drawOnCanvas(dom.peekCanvas, state.boardData);
-            dom.predictionSlide.classList.add(CLASS_NAMES.PEEKING);
             dom.peekBoardContainer.classList.add(CLASS_NAMES.VISIBLE);
+
+            if (isManualMode) {
+                dom.predictionSlide.classList.add(CLASS_NAMES.PEEKING);
+            }
         }
 
         function stopPeeking() {
             if (!state.isPeeking) return;
             state.isPeeking = false;
-            dom.predictionSlide.classList.remove(CLASS_NAMES.PEEKING);
             dom.peekBoardContainer.classList.remove(CLASS_NAMES.VISIBLE);
+
+            if (state.settings.tttMode === 'manual') {
+                dom.predictionSlide.classList.remove(CLASS_NAMES.PEEKING);
+            }
         }
 
         function handleManualGesture(deltaX, deltaY) {
@@ -658,17 +671,22 @@
                 state.touchStart.x = e.touches[0].clientX;
                 state.touchStart.y = e.touches[0].clientY;
                 state.isDragging = false;
+                if (state.settings.tttShortcutInputMode === 'swipe') {
+                    clearTimeout(state.peekTimer);
+                    state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
+                }
             }
         }
 
         function handleTouchMove(e) {
              if (state.settings.gameMode !== 'TicTacToe') return;
              const target = e.currentTarget;
+             const deltaX = e.touches[0].clientX - state.touchStart.x;
+             const deltaY = e.touches[0].clientY - state.touchStart.y;
+             if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) state.isDragging = true;
+
              if (target === dom.sliderStage && state.settings.tttMode !== 'directShortcut') {
                 e.preventDefault();
-                const deltaX = e.touches[0].clientX - state.touchStart.x;
-                const deltaY = e.touches[0].clientY - state.touchStart.y;
-                if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) state.isDragging = true;
                 clearTimeout(state.peekTimer);
                 if (state.isPeeking) stopPeeking();
                 if (state.gameFinished && state.isDragging) {
@@ -676,21 +694,23 @@
                 }
             } else if (target === dom.directShortcutModeDisplay) {
                  e.preventDefault();
-                 const deltaX = e.touches[0].clientX - state.touchStart.x;
-                 const deltaY = e.touches[0].clientY - state.touchStart.y;
-                 if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) state.isDragging = true;
+                 clearTimeout(state.peekTimer);
+                 if (state.isPeeking) stopPeeking();
             }
         }
 
         async function handleTouchEnd(e) {
             if (state.settings.gameMode !== 'TicTacToe') return;
             const target = e.currentTarget;
+
+            clearTimeout(state.peekTimer);
+            if (state.isPeeking) {
+                stopPeeking();
+                state.isDragging = false;
+                return;
+            }
+
             if (target === dom.sliderStage && state.settings.tttMode !== 'directShortcut') {
-                clearTimeout(state.peekTimer);
-                if (state.isPeeking) {
-                    stopPeeking();
-                    return;
-                }
                 const deltaX = e.changedTouches[0].clientX - state.touchStart.x;
                 if (state.gameFinished) {
                     if (state.isDragging) {
@@ -707,15 +727,17 @@
                     const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
                     handleManualGesture(deltaX, deltaY);
                 }
-                state.isDragging = false;
             } else if (target === dom.directShortcutModeDisplay) {
                  if (state.isDragging && state.settings.tttShortcutInputMode === 'swipe') {
                     const deltaX = e.changedTouches[0].clientX - state.touchStart.x;
                     const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
                     handleManualGesture(deltaX, deltaY);
+                 } else if (!state.isDragging && state.gameFinished) { // TAP
+                    await handleBoardClick();
+                    resetTttGame();
                  }
-                 state.isDragging = false;
             }
+            state.isDragging = false;
         }
 
         function handleDoubleTap() {
@@ -919,14 +941,6 @@
             dom.modeDirectShortcutBtn.addEventListener('click', () => toggleTttMode('directShortcut'));
             dom.shortcutModeAutoBtn.addEventListener('click', () => toggleTttShortcutInputMode('auto'));
             dom.shortcutModeSwipeBtn.addEventListener('click', () => toggleTttShortcutInputMode('swipe'));
-
-
-            dom.directShortcutModeDisplay.addEventListener('click', async () => {
-                if (state.gameFinished && state.settings.tttMode === 'directShortcut') {
-                    await handleBoardClick();
-                    resetTttGame();
-                }
-            });
 
             dom.rpsModeMagicianBtn.addEventListener('click', () => toggleRpsPlayMode('magicianFirst'));
             dom.rpsModeSpectatorBtn.addEventListener('click', () => toggleRpsPlayMode('spectatorFirst'));
