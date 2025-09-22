@@ -76,12 +76,11 @@
         #prediction-slide.peeking { opacity: 0.1; }
         #board-image { cursor: pointer; }
 
-        /* --- RPS Layout & Visual Cues (PERUBAHAN BARU) --- */
+        /* --- RPS Layout & Visual Cues --- */
         .rps-wrapper {
-            position: relative; /* Diperlukan untuk positioning titik */
+            position: relative; 
             border-radius: 0.5rem;
-            box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.25); /* Glow statis */
-            transition: box-shadow 0.4s ease-in-out, transform 0.2s ease;
+            transition: transform 0.2s ease;
             cursor: pointer;
         }
         .rps-wrapper:hover {
@@ -99,7 +98,6 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
-            /* Beri sedikit glow pada titik agar lebih mudah dilihat oleh magician */
             box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.7);
         }
         #rps-image-container img {
@@ -151,27 +149,30 @@
             <div id="rps-settings" class="hidden space-y-4">
                  <div>
                     <label class="font-medium">Gaya Permainan</label>
-                     <div class="mt-2 grid grid-cols-2 gap-2">
-                        <button id="rps-mode-magician-btn" class="p-2 rounded-md transition-colors">Magician First</button>
-                        <button id="rps-mode-spectator-btn" class="p-2 rounded-md transition-colors">Spectator First</button>
+                     <div class="mt-2 grid grid-cols-3 gap-2 text-sm">
+                        <button id="rps-mode-magician-btn" class="p-2 rounded-md transition-colors">Magician</button>
+                        <button id="rps-mode-spectator-btn" class="p-2 rounded-md transition-colors">Spectator</button>
+                        <button id="rps-mode-mirroring-btn" class="p-2 rounded-md transition-colors">Mirroring</button>
                     </div>
                  </div>
-                 <div>
+                 <div id="rps-rounds-container">
                     <label for="rps-rounds-input" class="font-medium">Jumlah Ronde (1-5)</label>
                     <input type="number" id="rps-rounds-input" min="1" max="5" value="5" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                 </div>
-                 <div>
-                    <label for="rps-wins-input" class="font-medium">Target Menang</label>
-                    <input type="number" id="rps-wins-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
-                </div>
-                 <div>
-                    <label for="rps-loses-input" class="font-medium">Target Kalah</label>
-                    <input type="number" id="rps-loses-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
-                </div>
-                 <div>
-                    <label for="rps-draws-input" class="font-medium">Target Seri</label>
-                    <input type="number" id="rps-draws-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
-                </div>
+                 <div id="rps-targets-container" class="space-y-4">
+                     <div>
+                        <label for="rps-wins-input" class="font-medium">Target Menang</label>
+                        <input type="number" id="rps-wins-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+                     <div>
+                        <label for="rps-loses-input" class="font-medium">Target Kalah</label>
+                        <input type="number" id="rps-loses-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+                     <div>
+                        <label for="rps-draws-input" class="font-medium">Target Seri</label>
+                        <input type="number" id="rps-draws-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+                 </div>
             </div>
 
             <div class="mt-6 flex justify-end">
@@ -202,13 +203,13 @@
     <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
         <div id="rps-image-container" class="flex flex-col flex-wrap justify-center gap-8">
             <div id="rock-wrapper" class="rps-wrapper">
-                <img id="rock" src="/icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
+                <img id="rock" src="/icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
             </div>
             <div id="paper-wrapper" class="rps-wrapper">
-                <img id="paper" src="/icons/rps/paper.png" alt="Paper" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
+                <img id="paper" src="/icons/rps/paper.png" alt="Paper" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Paper';">
             </div>
             <div id="scissors-wrapper" class="rps-wrapper">
-                <img id="scissors" src="/icons/rps/scissors.png" alt="Scissors" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
+                <img id="scissors" src="/icons/rps/scissors.png" alt="Scissors" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert shadow-lg" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Scissors';">
             </div>
         </div>
     </div>
@@ -254,21 +255,19 @@
             PEEKING: 'peeking',
             ACTIVE_BUTTON: 'bg-blue-600',
             INACTIVE_BUTTON: 'bg-gray-700',
-            HAS_DOT: 'has-dot', // Class untuk isyarat titik putih
+            HAS_DOT: 'has-dot', 
         };
 
         // --- Elemen DOM ---
         const dom = {
-            // Umum
             settingsTrigger: document.getElementById('settings-trigger'),
             settingsPanel: document.getElementById('settings-panel'),
             saveSettingsBtn: document.getElementById('save-settings-btn'),
             closeSettingsBtn: document.getElementById('close-settings-btn'),
             updateNotification: document.getElementById('update-notification'),
             gameModeSelect: document.getElementById('game-mode-select'),
-            // TicTacToe
             tttGame: document.getElementById('tictactoe-game'),
-            sliderStage: document.getElementById('tictactoe-game'), // alias
+            sliderStage: document.getElementById('tictactoe-game'), 
             slideWrapper: document.getElementById('slide-wrapper'),
             predictionSlide: document.getElementById('prediction-slide'),
             peekBoardContainer: document.getElementById('peek-board-container'),
@@ -279,7 +278,6 @@
             modeOnlineBtn: document.getElementById('mode-online-btn'),
             modeManualBtn: document.getElementById('mode-manual-btn'),
             shortcutNameInput: document.getElementById('shortcut-name-input'),
-            // RPS
             rpsGame: document.getElementById('rps-game'),
             rpsImageContainer: document.getElementById('rps-image-container'),
             rockWrapper: document.getElementById('rock-wrapper'),
@@ -294,7 +292,9 @@
             rpsSettings: document.getElementById('rps-settings'),
             rpsModeMagicianBtn: document.getElementById('rps-mode-magician-btn'),
             rpsModeSpectatorBtn: document.getElementById('rps-mode-spectator-btn'),
+            rpsModeMirroringBtn: document.getElementById('rps-mode-mirroring-btn'),
             rpsRoundsInput: document.getElementById('rps-rounds-input'),
+            rpsTargetsContainer: document.getElementById('rps-targets-container'),
             rpsWinsInput: document.getElementById('rps-wins-input'),
             rpsLosesInput: document.getElementById('rps-loses-input'),
             rpsDrawsInput: document.getElementById('rps-draws-input'),
@@ -314,7 +314,6 @@
             },
             firebaseUnsubscribe: null,
             isInitialRpsLoad: true,
-            // TTT State
             boardData: Array(9).fill(null),
             currentPlayer: 'X',
             gameFinished: false,
@@ -327,10 +326,10 @@
             isPeeking: false,
             peekTimer: null,
             initialTranslate: 0,
-            // RPS State
             rpsGamePlan: [],
             rpsCurrentRound: 0,
             rpsCorrectChoiceForSpectator: null,
+            isRpsFreePlayActive: true, 
         };
 
         const app = initializeApp(firebaseConfig);
@@ -408,7 +407,7 @@
         function resetRpsGame() {
             state.isInitialRpsLoad = true; state.rpsCurrentRound = 0; state.rpsGamePlan = [];
             state.rpsCorrectChoiceForSpectator = null;
-            // Hapus class titik dari semua wrapper
+            state.isRpsFreePlayActive = true;
             dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
             dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
             dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
@@ -433,59 +432,101 @@
                 if (opponentChoice) handleRpsMagic(opponentChoice);
             });
         }
+
         function handleRpsMagic(opponentChoice) {
             if (state.rpsCurrentRound >= state.settings.rpsRounds) return;
+            
+            const currentMode = state.settings.rpsPlayMode;
+            
+            // Logika untuk Mirroring
+            if (currentMode === 'mirroring') {
+                state.rpsCurrentRound++;
+                dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom[`${opponentChoice}Wrapper`].classList.add(CLASS_NAMES.HAS_DOT);
+                // Penting: Jangan ubah isRpsFreePlayActive, biarkan tetap true
+                return;
+            }
+
+            // Logika untuk Magician dan Spectator
+            state.isRpsFreePlayActive = false; 
+
             const desiredOutcome = state.rpsGamePlan[state.rpsCurrentRound];
             let myChoice;
             if (desiredOutcome === 'win') myChoice = { rock: 'paper', paper: 'scissors', scissors: 'rock' }[opponentChoice];
             else if (desiredOutcome === 'lose') myChoice = { rock: 'scissors', paper: 'rock', scissors: 'paper' }[opponentChoice];
             else myChoice = opponentChoice;
             
-            if (state.settings.rpsPlayMode === 'magicianFirst') {
+            if (currentMode === 'magicianFirst') {
                 showRpsFullscreen(dom[`${myChoice}Img`].src);
                 state.rpsCurrentRound++;
             } else { // spectatorFirst
                 state.rpsCorrectChoiceForSpectator = myChoice;
-                // Bersihkan titik sebelum menambahkan yang baru
                 dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
                 dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
                 dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
-                // Tambahkan titik putih ke pilihan yang benar
                 dom[`${myChoice}Wrapper`].classList.add(CLASS_NAMES.HAS_DOT);
             }
         }
+
         function handleSpectatorChoice(chosen) {
-            if (state.settings.rpsPlayMode !== 'spectatorFirst' || chosen !== state.rpsCorrectChoiceForSpectator) return;
-            
-            showRpsFullscreen(dom[`${chosen}Img`].src);
-            state.rpsCurrentRound++;
-            state.rpsCorrectChoiceForSpectator = null;
-            // Menghapus titik setelah pilihan dibuat
-            dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
-            dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
-            dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            if (state.isRpsFreePlayActive) {
+                showRpsFullscreen(dom[`${chosen}Img`].src);
+                return;
+            }
+
+            if (state.settings.rpsPlayMode === 'spectatorFirst' && chosen === state.rpsCorrectChoiceForSpectator) {
+                showRpsFullscreen(dom[`${chosen}Img`].src);
+                state.rpsCurrentRound++;
+                state.rpsCorrectChoiceForSpectator = null;
+                
+                dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                state.isRpsFreePlayActive = true; 
+            }
         }
+
         function showRpsFullscreen(src) {
             dom.rpsFullscreenImage.src = src; dom.rpsFullscreenOverlay.classList.remove('hidden');
         }
+
         function closeRpsFullscreen() {
             dom.rpsFullscreenOverlay.classList.add('hidden');
+            
+            if (!state.isRpsFreePlayActive) {
+                state.isRpsFreePlayActive = true;
+            }
+
             if (state.rpsCurrentRound >= state.settings.rpsRounds) {
                 console.log("RPS Game Selesai!");
-                resetRpsGame(); generateRpsPlan();
+                resetRpsGame(); 
+                if (state.settings.rpsPlayMode !== 'mirroring') generateRpsPlan();
             }
         }
+        
         function toggleRpsPlayMode(newMode, isInitialLoad = false) {
             state.settings.rpsPlayMode = newMode;
             if(!isInitialLoad) {
                  resetRpsGame();
-                 generateRpsPlan();
+                 if (newMode !== 'mirroring') generateRpsPlan();
             }
+            
             const isMagician = newMode === 'magicianFirst';
+            const isSpectator = newMode === 'spectatorFirst';
+            const isMirroring = newMode === 'mirroring';
+
             dom.rpsModeMagicianBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isMagician);
+            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isSpectator);
+            dom.rpsModeMirroringBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isMirroring);
+            
             dom.rpsModeMagicianBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isMagician);
-            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, !isMagician);
-            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, isMagician);
+            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isSpectator);
+            dom.rpsModeMirroringBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isMirroring);
+            
+            // Sembunyikan target menang/kalah jika mode mirroring
+            dom.rpsTargetsContainer.classList.toggle(CLASS_NAMES.HIDDEN, isMirroring);
         }
 
         // --- PENGATURAN & PENYIMPANAN ---
@@ -499,7 +540,8 @@
             let wins = parseInt(dom.rpsWinsInput.value) || 0;
             let loses = parseInt(dom.rpsLosesInput.value) || 0;
             let draws = parseInt(dom.rpsDrawsInput.value) || 0;
-            if (wins + loses + draws > rounds) {
+
+            if (state.settings.rpsPlayMode !== 'mirroring' && (wins + loses + draws > rounds)) {
                 alert("Jumlah target Menang, Kalah, & Seri tidak boleh melebihi Jumlah Ronde."); return;
             }
             state.settings.rpsRounds = rounds; state.settings.rpsWins = wins; state.settings.rpsLoses = loses; state.settings.rpsDraws = draws;
@@ -550,6 +592,7 @@
             // RPS Listeners
             dom.rpsModeMagicianBtn.addEventListener('click', () => toggleRpsPlayMode('magicianFirst'));
             dom.rpsModeSpectatorBtn.addEventListener('click', () => toggleRpsPlayMode('spectatorFirst'));
+            dom.rpsModeMirroringBtn.addEventListener('click', () => toggleRpsPlayMode('mirroring'));
             dom.rockWrapper.addEventListener('click', () => handleSpectatorChoice('rock'));
             dom.paperWrapper.addEventListener('click', () => handleSpectatorChoice('paper'));
             dom.scissorsWrapper.addEventListener('click', () => handleSpectatorChoice('scissors'));
