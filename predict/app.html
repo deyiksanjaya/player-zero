@@ -395,15 +395,24 @@
         function switchGameMode(mode, isInitialLoad = false) {
             state.settings.gameMode = mode;
             if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); state.firebaseUnsubscribe = null; }
+            
             const isTTT = mode === 'TicTacToe';
-            dom.tttGame.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
-            dom.rpsGame.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
-            dom.directShortcutModeDisplay.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
+
+            // Toggle visibility for settings panels
             dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
             dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
-            
-            if (isTTT) initTicTacToe(isInitialLoad);
-            else initRockPaperScissors(isInitialLoad);
+
+            if (isTTT) {
+                // If switching to TTT, hide RPS game and let init/toggle handle TTT views
+                dom.rpsGame.classList.add(CLASS_NAMES.HIDDEN);
+                initTicTacToe(isInitialLoad);
+            } else {
+                // If switching away from TTT, hide all possible TTT views and show RPS game
+                dom.tttGame.classList.add(CLASS_NAMES.HIDDEN);
+                dom.directShortcutModeDisplay.classList.add(CLASS_NAMES.HIDDEN);
+                dom.rpsGame.classList.remove(CLASS_NAMES.HIDDEN);
+                initRockPaperScissors(isInitialLoad);
+            }
         }
         
         // --- TIC-TAC-TOE LOGIC ---
