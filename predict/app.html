@@ -76,23 +76,33 @@
         #prediction-slide.peeking { opacity: 0.1; }
         #board-image { cursor: pointer; }
 
-        /* --- RPS Layout & Visual Cues (PERBAIKAN WARNA GLOW) --- */
+        /* --- RPS Layout & Visual Cues (PERUBAHAN BARU) --- */
         .rps-wrapper {
-            border-radius: 0.5rem; /* Samakan dengan radius gambar */
-            /* Mengembalikan warna glow menjadi putih seperti semula */
-            box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.25); /* Default Glow Putih */
+            position: relative; /* Diperlukan untuk positioning titik */
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.25); /* Glow statis */
             transition: box-shadow 0.4s ease-in-out, transform 0.2s ease;
             cursor: pointer;
         }
         .rps-wrapper:hover {
              transform: scale(1.05);
         }
-        .rps-wrapper.is-cue {
-             /* Glow putih yang lebih redup (intensitas turun) untuk petunjuk */
-             box-shadow: 0 8px 20px -5px rgba(255, 255, 255, 0.1); 
+        /* Style untuk titik putih 1-pixel */
+        .rps-wrapper.has-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 1px;
+            height: 1px;
+            background-color: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            /* Beri sedikit glow pada titik agar lebih mudah dilihat oleh magician */
+            box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.7);
         }
         #rps-image-container img {
-            /* Glow dipindahkan ke wrapper, gambar hanya untuk tampilan */
              transition: transform 0.2s ease;
         }
         .is-authenticating {
@@ -191,7 +201,6 @@
     <!-- Kontainer Game Rock-Paper-Scissors -->
     <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
         <div id="rps-image-container" class="flex flex-col flex-wrap justify-center gap-8">
-            <!-- PERBAIKAN: Menambahkan div wrapper untuk glow -->
             <div id="rock-wrapper" class="rps-wrapper">
                 <img id="rock" src="/icons/rps/rock.png" alt="Rock" class="w-48 h-48 md:w-64 md:h-64 rounded-lg object-cover invert" onerror="this.onerror=null;this.src='https://placehold.co/256/f1f5f9/334155?text=Rock';">
             </div>
@@ -245,7 +254,7 @@
             PEEKING: 'peeking',
             ACTIVE_BUTTON: 'bg-blue-600',
             INACTIVE_BUTTON: 'bg-gray-700',
-            IS_CUE: 'is-cue', // Class untuk isyarat visual
+            HAS_DOT: 'has-dot', // Class untuk isyarat titik putih
         };
 
         // --- Elemen DOM ---
@@ -297,7 +306,7 @@
                 gameMode: 'TicTacToe',
                 tttMode: 'online', 
                 tttShortcutName: '',
-                rpsPlayMode: 'magicianFirst', // Mode baru
+                rpsPlayMode: 'magicianFirst', 
                 rpsRounds: 5,
                 rpsWins: 0,
                 rpsLoses: 0,
@@ -321,7 +330,7 @@
             // RPS State
             rpsGamePlan: [],
             rpsCurrentRound: 0,
-            rpsCorrectChoiceForSpectator: null, // Pilihan benar untuk mode Spectator
+            rpsCorrectChoiceForSpectator: null,
         };
 
         const app = initializeApp(firebaseConfig);
@@ -399,9 +408,10 @@
         function resetRpsGame() {
             state.isInitialRpsLoad = true; state.rpsCurrentRound = 0; state.rpsGamePlan = [];
             state.rpsCorrectChoiceForSpectator = null;
-            dom.rockWrapper.classList.remove(CLASS_NAMES.IS_CUE);
-            dom.paperWrapper.classList.remove(CLASS_NAMES.IS_CUE);
-            dom.scissorsWrapper.classList.remove(CLASS_NAMES.IS_CUE);
+            // Hapus class titik dari semua wrapper
+            dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
             closeRpsFullscreen();
         }
         function generateRpsPlan() {
@@ -436,11 +446,12 @@
                 state.rpsCurrentRound++;
             } else { // spectatorFirst
                 state.rpsCorrectChoiceForSpectator = myChoice;
-                dom.rockWrapper.classList.remove(CLASS_NAMES.IS_CUE);
-                dom.paperWrapper.classList.remove(CLASS_NAMES.IS_CUE);
-                dom.scissorsWrapper.classList.remove(CLASS_NAMES.IS_CUE);
-                // Menambahkan cue ke wrapper, bukan gambar
-                dom[`${myChoice}Wrapper`].classList.add(CLASS_NAMES.IS_CUE);
+                // Bersihkan titik sebelum menambahkan yang baru
+                dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                // Tambahkan titik putih ke pilihan yang benar
+                dom[`${myChoice}Wrapper`].classList.add(CLASS_NAMES.HAS_DOT);
             }
         }
         function handleSpectatorChoice(chosen) {
@@ -449,10 +460,10 @@
             showRpsFullscreen(dom[`${chosen}Img`].src);
             state.rpsCurrentRound++;
             state.rpsCorrectChoiceForSpectator = null;
-            // Menghapus cue dari wrapper
-            dom.rockWrapper.classList.remove(CLASS_NAMES.IS_CUE);
-            dom.paperWrapper.classList.remove(CLASS_NAMES.IS_CUE);
-            dom.scissorsWrapper.classList.remove(CLASS_NAMES.IS_CUE);
+            // Menghapus titik setelah pilihan dibuat
+            dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
         }
         function showRpsFullscreen(src) {
             dom.rpsFullscreenImage.src = src; dom.rpsFullscreenOverlay.classList.remove('hidden');
@@ -539,7 +550,6 @@
             // RPS Listeners
             dom.rpsModeMagicianBtn.addEventListener('click', () => toggleRpsPlayMode('magicianFirst'));
             dom.rpsModeSpectatorBtn.addEventListener('click', () => toggleRpsPlayMode('spectatorFirst'));
-            // Listener dipasang di wrapper, bukan gambar
             dom.rockWrapper.addEventListener('click', () => handleSpectatorChoice('rock'));
             dom.paperWrapper.addEventListener('click', () => handleSpectatorChoice('paper'));
             dom.scissorsWrapper.addEventListener('click', () => handleSpectatorChoice('scissors'));
