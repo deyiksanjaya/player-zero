@@ -220,6 +220,9 @@
 
     <!-- Tic-Tac-Toe Game Container -->
     <main id="tictactoe-game">
+        <div id="peek-board-container">
+            <canvas id="peek-canvas"></canvas>
+        </div>
         <div id="slide-wrapper">
             <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
                 <span id="prediction-text-display">my prediction..</span>
@@ -232,11 +235,6 @@
             </div>
         </div>
     </main>
-
-    <!-- This container is now independent -->
-    <div id="peek-board-container">
-        <canvas id="peek-canvas"></canvas>
-    </div>
 
     <!-- Direct Shortcut Mode Display -->
     <div id="direct-shortcut-mode-display" class="hidden w-full h-full flex items-center justify-center cursor-pointer p-4">
@@ -646,13 +644,14 @@
         
         function handleTouchStart(e) {
             if (state.settings.gameMode !== 'TicTacToe') return;
+            e.preventDefault();
             const target = e.currentTarget;
+            state.touchStart.x = e.touches[0].clientX;
+            state.touchStart.y = e.touches[0].clientY;
+            state.isDragging = false;
+            clearTimeout(state.peekTimer);
+        
             if (target === dom.sliderStage && state.settings.tttMode !== 'directShortcut') {
-                 e.preventDefault();
-                 state.touchStart.x = e.touches[0].clientX;
-                 state.touchStart.y = e.touches[0].clientY;
-                 state.isDragging = false;
-                 clearTimeout(state.peekTimer);
                  state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
                  if (state.gameFinished) {
                     dom.slideWrapper.style.transition = 'none';
@@ -666,37 +665,25 @@
                  } else {
                     state.lastTapTime = now;
                  }
-            } else if (target === dom.directShortcutModeDisplay) {
-                e.preventDefault();
-                state.touchStart.x = e.touches[0].clientX;
-                state.touchStart.y = e.touches[0].clientY;
-                state.isDragging = false;
-                if (state.settings.tttShortcutInputMode === 'swipe') {
-                    clearTimeout(state.peekTimer);
-                    state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
-                }
+            } else if (target === dom.directShortcutModeDisplay && state.settings.tttShortcutInputMode === 'swipe') {
+                state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
             }
         }
 
         function handleTouchMove(e) {
              if (state.settings.gameMode !== 'TicTacToe') return;
+             e.preventDefault();
              const target = e.currentTarget;
              const deltaX = e.touches[0].clientX - state.touchStart.x;
              const deltaY = e.touches[0].clientY - state.touchStart.y;
              if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) state.isDragging = true;
 
-             if (target === dom.sliderStage && state.settings.tttMode !== 'directShortcut') {
-                e.preventDefault();
-                clearTimeout(state.peekTimer);
-                if (state.isPeeking) stopPeeking();
-                if (state.gameFinished && state.isDragging) {
-                    dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + deltaX}px)`;
-                }
-            } else if (target === dom.directShortcutModeDisplay) {
-                 e.preventDefault();
-                 clearTimeout(state.peekTimer);
-                 if (state.isPeeking) stopPeeking();
-            }
+             clearTimeout(state.peekTimer);
+             if (state.isPeeking) stopPeeking();
+
+             if (target === dom.sliderStage && state.gameFinished && state.isDragging) {
+                 dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + deltaX}px)`;
+             }
         }
 
         async function handleTouchEnd(e) {
@@ -710,8 +697,10 @@
                 return;
             }
 
+            const deltaX = e.changedTouches[0].clientX - state.touchStart.x;
+            const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
+
             if (target === dom.sliderStage && state.settings.tttMode !== 'directShortcut') {
-                const deltaX = e.changedTouches[0].clientX - state.touchStart.x;
                 if (state.gameFinished) {
                     if (state.isDragging) {
                         if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
@@ -724,13 +713,10 @@
                         await handleBoardClick();
                     }
                 } else if (state.settings.tttMode === 'manual' && state.isDragging) {
-                    const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
                     handleManualGesture(deltaX, deltaY);
                 }
             } else if (target === dom.directShortcutModeDisplay) {
                  if (state.isDragging && state.settings.tttShortcutInputMode === 'swipe') {
-                    const deltaX = e.changedTouches[0].clientX - state.touchStart.x;
-                    const deltaY = e.changedTouches[0].clientY - state.touchStart.y;
                     handleManualGesture(deltaX, deltaY);
                  } else if (!state.isDragging && state.gameFinished) { // TAP
                     await handleBoardClick();
@@ -845,15 +831,133 @@
         }
         
         // --- ROCK-PAPER-SCISSORS LOGIC ---
-        function initRockPaperScissors(isInitialLoad) { /* ... existing code ... */ }
-        function resetRpsGame() { /* ... existing code ... */ }
-        function generateRpsPlan() { /* ... existing code ... */ }
-        function initializeRpsFirebaseListener() { /* ... existing code ... */ }
-        function handleRpsMagic(opponentChoice) { /* ... existing code ... */ }
-        function handleSpectatorChoice(chosen) { /* ... existing code ... */ }
-        function showRpsFullscreen(src) { /* ... existing code ... */ }
-        function closeRpsFullscreen() { /* ... existing code ... */ }
-        function toggleRpsPlayMode(newMode, isInitialLoad = false) { /* ... existing code ... */ }
+        function initRockPaperScissors(isInitialLoad) {
+            resetRpsGame();
+            generateRpsPlan();
+            initializeRpsFirebaseListener();
+            if(isInitialLoad) toggleRpsPlayMode(state.settings.rpsPlayMode, true);
+        }
+        function resetRpsGame() {
+            state.isInitialRpsLoad = true; state.rpsCurrentRound = 0; state.rpsGamePlan = [];
+            state.rpsCorrectChoiceForSpectator = null;
+            state.isRpsFreePlayActive = true;
+            dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+            closeRpsFullscreen();
+        }
+        function generateRpsPlan() {
+            if (state.settings.rpsPlayMode === 'mirroring') return;
+            const plan = [];
+            for (let i = 0; i < state.settings.rpsWins; i++) plan.push('win');
+            for (let i = 0; i < state.settings.rpsLoses; i++) plan.push('lose');
+            for (let i = 0; i < state.settings.rpsDraws; i++) plan.push('draw');
+            const remaining = state.settings.rpsRounds - plan.length;
+            for (let i = 0; i < remaining; i++) plan.push('draw');
+            for (let i = plan.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [plan[i], plan[j]] = [plan[j], plan[i]]; }
+            state.rpsGamePlan = plan;
+        }
+        function initializeRpsFirebaseListener() {
+            if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); state.firebaseUnsubscribe = null; }
+            const gameRef = ref(db, 'rock-paper-scissors');
+            state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
+                if (!snapshot.exists() || state.isInitialRpsLoad) { state.isInitialRpsLoad = false; return; }
+                const opponentChoice = snapshot.val().userChoice;
+                if (opponentChoice) handleRpsMagic(opponentChoice);
+            });
+        }
+
+        function handleRpsMagic(opponentChoice) {
+            if (state.rpsCurrentRound >= state.settings.rpsRounds) return;
+            
+            const currentMode = state.settings.rpsPlayMode;
+            
+            if (currentMode === 'mirroring') {
+                state.rpsCurrentRound++;
+                dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom[`${opponentChoice}Wrapper`].classList.add(CLASS_NAMES.HAS_DOT);
+                return;
+            }
+
+            state.isRpsFreePlayActive = false; 
+
+            const desiredOutcome = state.rpsGamePlan[state.rpsCurrentRound];
+            let myChoice;
+            if (desiredOutcome === 'win') myChoice = { rock: 'paper', paper: 'scissors', scissors: 'rock' }[opponentChoice];
+            else if (desiredOutcome === 'lose') myChoice = { rock: 'scissors', paper: 'rock', scissors: 'paper' }[opponentChoice];
+            else myChoice = opponentChoice;
+            
+            if (currentMode === 'magicianFirst') {
+                showRpsFullscreen(dom[`${myChoice}Img`].src);
+                state.rpsCurrentRound++;
+            } else { // spectatorFirst
+                state.rpsCorrectChoiceForSpectator = myChoice;
+                dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom[`${myChoice}Wrapper`].classList.add(CLASS_NAMES.HAS_DOT);
+            }
+        }
+
+        function handleSpectatorChoice(chosen) {
+            if (state.isRpsFreePlayActive) {
+                showRpsFullscreen(dom[`${chosen}Img`].src);
+                return;
+            }
+
+            if (state.settings.rpsPlayMode === 'spectatorFirst' && chosen === state.rpsCorrectChoiceForSpectator) {
+                showRpsFullscreen(dom[`${chosen}Img`].src);
+                state.rpsCurrentRound++;
+                state.rpsCorrectChoiceForSpectator = null;
+                
+                dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
+                state.isRpsFreePlayActive = true; 
+            }
+        }
+
+        function showRpsFullscreen(src) {
+            dom.rpsFullscreenImage.src = src; dom.rpsFullscreenOverlay.classList.remove('hidden');
+        }
+
+        function closeRpsFullscreen() {
+            dom.rpsFullscreenOverlay.classList.add('hidden');
+            
+            if (!state.isRpsFreePlayActive) {
+                state.isRpsFreePlayActive = true;
+            }
+
+            if (state.rpsCurrentRound >= state.settings.rpsRounds) {
+                console.log("RPS Game Over!");
+                resetRpsGame(); 
+                generateRpsPlan();
+            }
+        }
+        
+        function toggleRpsPlayMode(newMode, isInitialLoad = false) {
+            state.settings.rpsPlayMode = newMode;
+            if(!isInitialLoad) {
+                 resetRpsGame();
+                 generateRpsPlan();
+            }
+            
+            const isMagician = newMode === 'magicianFirst';
+            const isSpectator = newMode === 'spectatorFirst';
+            const isMirroring = newMode === 'mirroring';
+
+            dom.rpsModeMagicianBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isMagician);
+            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isSpectator);
+            dom.rpsModeMirroringBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isMirroring);
+            
+            dom.rpsModeMagicianBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isMagician);
+            dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isSpectator);
+            dom.rpsModeMirroringBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isMirroring);
+            
+            dom.rpsTargetsContainer.classList.toggle(CLASS_NAMES.HIDDEN, isMirroring);
+        }
 
         // --- SETTINGS & STORAGE ---
         function openSettings() { dom.settingsPanel.classList.remove(CLASS_NAMES.HIDDEN); }
@@ -915,9 +1019,32 @@
         }
         
         // --- PWA & Initialization ---
-        function registerServiceWorker() { /* ... existing code ... */ }
-        function showUpdateNotification() { /* ... existing code ... */ }
-        function listenForServiceWorkerUpdates() { /* ... existing code ... */ }
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./service-worker.js').then(registration => {
+                        console.log('SW registered: ', registration);
+                    }).catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+                });
+            }
+        }
+        function showUpdateNotification() {
+            dom.updateNotification.classList.remove('hidden');
+            setTimeout(() => {
+                dom.updateNotification.classList.add('hidden');
+            }, 3000);
+        }
+        function listenForServiceWorkerUpdates() {
+             if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'PWA_UPDATED') {
+                        showUpdateNotification();
+                    }
+                });
+            }
+        }
         function setupEventListeners() {
             dom.sliderStage.addEventListener('touchstart', handleTouchStart, { passive: false });
             dom.sliderStage.addEventListener('touchmove', handleTouchMove, { passive: false });
