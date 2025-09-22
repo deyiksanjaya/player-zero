@@ -1008,6 +1008,7 @@
             closeSettings();
             switchGameMode(state.settings.gameMode);
         }
+
         function loadSettings() {
             const saved = localStorage.getItem('playerZeroSettings');
             if (saved) {
@@ -1020,6 +1021,8 @@
                 };
                 state.settings = { ...defaults, ...JSON.parse(saved) };
             }
+            // This function should ONLY update the form fields. 
+            // The logic is applied separately in init().
             dom.gameModeSelect.value = state.settings.gameMode;
             dom.shortcutNameInput.value = state.settings.tttShortcutName || '';
             dom.predictionTextInput.value = state.settings.tttPredictionText;
@@ -1029,11 +1032,6 @@
             dom.rpsWinsInput.value = state.settings.rpsWins;
             dom.rpsLosesInput.value = state.settings.rpsLoses; 
             dom.rpsDrawsInput.value = state.settings.rpsDraws;
-            
-            const isTTT = state.settings.gameMode === 'TicTacToe';
-            dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
-            dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
-            switchGameMode(state.settings.gameMode, true);
         }
         
         // --- PWA & Initialization ---
@@ -1075,7 +1073,13 @@
             dom.closeSettingsBtn.addEventListener('click', closeSettings);
             dom.saveSettingsBtn.addEventListener('click', saveSettings);
             dom.gameModeSelect.addEventListener('change', (e) => {
-                switchGameMode(e.target.value);
+                // When game mode changes, we need to update the state and then re-apply logic
+                state.settings.gameMode = e.target.value;
+                switchGameMode(state.settings.gameMode);
+                // Also update the settings panel view
+                const isTTT = state.settings.gameMode === 'TicTacToe';
+                dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
+                dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
             });
             dom.modeOnlineBtn.addEventListener('click', () => toggleTttMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleTttMode('manual'));
@@ -1096,7 +1100,8 @@
         
         function init() {
             onAuthStateChanged(auth, user => { if (!user) signInAnonymously(auth); });
-            loadSettings();
+            loadSettings(); // Step 1: Just load data into state and form inputs.
+            switchGameMode(state.settings.gameMode, true); // Step 2: Apply all logic and UI setup based on the loaded state.
             setupEventListeners();
             registerServiceWorker();
             listenForServiceWorkerUpdates();
