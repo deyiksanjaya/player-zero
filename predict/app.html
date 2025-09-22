@@ -145,29 +145,32 @@
             <!-- Tic-Tac-Toe Settings -->
             <div id="tictactoe-settings" class="space-y-4">
                 <div>
-                    <label class="font-medium">Input Mode</label>
-                    <div class="mt-2 grid grid-cols-2 gap-2">
+                    <label class="font-medium">Mode</label>
+                    <div class="mt-2 grid grid-cols-3 gap-2 text-sm">
                         <button id="mode-online-btn" class="p-2 rounded-md transition-colors" aria-label="Select Online Mode">Online</button>
                         <button id="mode-manual-btn" class="p-2 rounded-md transition-colors" aria-label="Select Manual Mode">Manual</button>
+                        <button id="mode-direct-shortcut-btn" class="p-2 rounded-md transition-colors" aria-label="Select Direct Shortcut Output">Shortcut</button>
                     </div>
                 </div>
                 <div>
                     <label for="shortcut-name-input" class="font-medium">Shortcut Name (iOS)</label>
                     <input type="text" id="shortcut-name-input" placeholder="E.g., Open Camera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                 </div>
-                <div>
-                    <label for="prediction-text-input" class="font-medium">Prediction Text</label>
-                    <input type="text" id="prediction-text-input" placeholder="e.g., I predict..." class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
-                </div>
-                <div>
-                    <label for="winner-result-text-input" class="font-medium">Winner Result Text ($winner)</label>
-                    <input type="text" id="winner-result-text-input"
-                           placeholder="e.g., $winner takes the game!"
-                           class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
-                </div>
-                 <div>
-                    <label for="draw-result-text-input" class="font-medium">Draw Result Text</label>
-                    <input type="text" id="draw-result-text-input" placeholder="e.g., A classic draw." class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                <div id="ttt-text-settings-container" class="space-y-4">
+                    <div>
+                        <label for="prediction-text-input" class="font-medium">Prediction Text</label>
+                        <input type="text" id="prediction-text-input" placeholder="e.g., I predict..." class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                    </div>
+                    <div>
+                        <label for="winner-result-text-input" class="font-medium">Winner Result Text ($winner)</label>
+                        <input type="text" id="winner-result-text-input"
+                               placeholder="e.g., $winner takes the game!"
+                               class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                    </div>
+                     <div>
+                        <label for="draw-result-text-input" class="font-medium">Draw Result Text</label>
+                        <input type="text" id="draw-result-text-input" placeholder="e.g., A classic draw." class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                    </div>
                 </div>
             </div>
 
@@ -224,6 +227,11 @@
             </div>
         </div>
     </main>
+
+    <!-- Direct Shortcut Mode Display -->
+    <div id="direct-shortcut-mode-display" class="hidden w-full h-full flex items-center justify-center cursor-pointer p-4">
+        <p id="direct-shortcut-status-text" class="text-2xl font-semibold text-center text-gray-400"></p>
+    </div>
 
     <!-- Rock-Paper-Scissors Game Container -->
     <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
@@ -303,11 +311,15 @@
             tttSettings: document.getElementById('tictactoe-settings'),
             modeOnlineBtn: document.getElementById('mode-online-btn'),
             modeManualBtn: document.getElementById('mode-manual-btn'),
+            modeDirectShortcutBtn: document.getElementById('mode-direct-shortcut-btn'),
             shortcutNameInput: document.getElementById('shortcut-name-input'),
+            tttTextSettingsContainer: document.getElementById('ttt-text-settings-container'),
             predictionTextInput: document.getElementById('prediction-text-input'),
             winnerResultTextInput: document.getElementById('winner-result-text-input'),
             drawResultTextInput: document.getElementById('draw-result-text-input'),
             predictionTextDisplay: document.getElementById('prediction-text-display'),
+            directShortcutModeDisplay: document.getElementById('direct-shortcut-mode-display'),
+            directShortcutStatusText: document.getElementById('direct-shortcut-status-text'),
             rpsGame: document.getElementById('rps-game'),
             rpsImageContainer: document.getElementById('rps-image-container'),
             rockWrapper: document.getElementById('rock-wrapper'),
@@ -386,8 +398,10 @@
             const isTTT = mode === 'TicTacToe';
             dom.tttGame.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
             dom.rpsGame.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
+            dom.directShortcutModeDisplay.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
             dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
             dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
+            
             if (isTTT) initTicTacToe(isInitialLoad);
             else initRockPaperScissors(isInitialLoad);
         }
@@ -499,11 +513,16 @@
             state.currentPlayer = 'X';
             state.gameFinished = false;
             state.swipeGroup = null;
-            dom.resultText.textContent = '';
-            dom.boardImage.src = '';
-            animateToSlide(0, 0);
-            updatePredictionTextUI();
-            if (state.settings.tttMode === 'online') {
+            if (state.settings.tttMode === 'directShortcut') {
+                dom.directShortcutStatusText.textContent = 'Waiting for game data...';
+            } else {
+                dom.resultText.textContent = '';
+                dom.boardImage.src = '';
+                animateToSlide(0, 0);
+                updatePredictionTextUI();
+            }
+
+            if (state.settings.tttMode === 'online' || state.settings.tttMode === 'directShortcut') {
                  const gameRef = ref(db, 'magic-game-state');
                  set(gameRef, { board: state.boardData, timestamp: rtdbServerTimestamp() });
             }
@@ -588,7 +607,7 @@
         }
         
         function handleTouchStart(e) {
-            if(state.settings.gameMode !== 'TicTacToe') return;
+            if(state.settings.gameMode !== 'TicTacToe' || state.settings.tttMode === 'directShortcut') return;
             e.preventDefault();
             const touch = e.touches[0];
             state.touchStart.x = touch.clientX;
@@ -611,7 +630,7 @@
         }
 
         function handleTouchMove(e) {
-            if(state.settings.gameMode !== 'TicTacToe') return;
+            if(state.settings.gameMode !== 'TicTacToe' || state.settings.tttMode === 'directShortcut') return;
             e.preventDefault();
             const touch = e.touches[0];
             const deltaX = touch.clientX - state.touchStart.x;
@@ -630,7 +649,7 @@
         }
 
         async function handleTouchEnd(e) {
-            if(state.settings.gameMode !== 'TicTacToe') return;
+            if(state.settings.gameMode !== 'TicTacToe' || state.settings.tttMode === 'directShortcut') return;
             clearTimeout(state.peekTimer);
             if (state.isPeeking) {
                 stopPeeking();
@@ -682,33 +701,66 @@
         }
         
         function toggleTttMode(newMode, isInitialLoad = false) {
-            state.settings.tttMode = newMode; if (!isInitialLoad) resetTttGame();
-            if (newMode === 'online') initializeTttFirebaseListener();
-            else if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); state.firebaseUnsubscribe = null; }
-            const isOnline = newMode === 'online';
-            dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isOnline); dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isOnline);
-            dom.modeManualBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, !isOnline); dom.modeManualBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, isOnline);
+            state.settings.tttMode = newMode;
+            if (!isInitialLoad) resetTttGame();
+
+            const isDirectShortcut = newMode === 'directShortcut';
+
+            // Manage listeners
+            if (newMode === 'online' || isDirectShortcut) {
+                initializeTttFirebaseListener();
+            } else { // manual
+                if (state.firebaseUnsubscribe) {
+                    state.firebaseUnsubscribe();
+                    state.firebaseUnsubscribe = null;
+                }
+            }
+
+            // Manage UI Visibility
+            dom.tttGame.classList.toggle(CLASS_NAMES.HIDDEN, isDirectShortcut);
+            dom.directShortcutModeDisplay.classList.toggle(CLASS_NAMES.HIDDEN, !isDirectShortcut);
+            dom.tttTextSettingsContainer.classList.toggle(CLASS_NAMES.HIDDEN, isDirectShortcut);
+
+            // Manage Button Styles
+            dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, newMode === 'online');
+            dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, newMode !== 'online');
+            dom.modeManualBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, newMode === 'manual');
+            dom.modeManualBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, newMode !== 'manual');
+            dom.modeDirectShortcutBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isDirectShortcut);
+            dom.modeDirectShortcutBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isDirectShortcut);
         }
 
         function initializeTttFirebaseListener() {
-            if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); }
+            if (state.firebaseUnsubscribe) state.firebaseUnsubscribe();
             const gameRef = ref(db, 'magic-game-state');
             state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
                 if (!snapshot.exists()) return;
-                
-                const wasFinished = state.gameFinished;
-                if (wasFinished) return;
 
                 const gameState = snapshot.val();
-                if (gameState && gameState.board) {
-                    for (let i = 0; i < 9; i++) state.boardData[i] = gameState.board[i] || null;
-                    
-                    const winnerInfo = checkWinner(state.boardData);
-                    const isFull = state.boardData.every(cell => cell !== null);
-                    
-                    drawOnCanvas(dom.peekCanvas, state.boardData, winnerInfo ? winnerInfo.combination : null); 
+                if (!gameState || !gameState.board) return;
 
-                    if (winnerInfo || isFull) {
+                const wasFinished = state.gameFinished;
+                
+                for (let i = 0; i < 9; i++) state.boardData[i] = gameState.board[i] || null;
+                const winnerInfo = checkWinner(state.boardData);
+                const isFull = state.boardData.every(cell => cell !== null);
+                const isGameOver = !!winnerInfo || isFull;
+
+                if (state.settings.tttMode === 'directShortcut') {
+                    if (isGameOver) {
+                        if (wasFinished) return; // Don't re-trigger if already finished
+                        drawOnCanvas(dom.peekCanvas, state.boardData, winnerInfo ? winnerInfo.combination : null);
+                        dom.boardImage.src = dom.peekCanvas.toDataURL('image/png');
+                        state.gameFinished = true;
+                        dom.directShortcutStatusText.textContent = 'Data ready. Tap to run shortcut.';
+                    } else {
+                        state.gameFinished = false; 
+                        dom.directShortcutStatusText.textContent = 'Waiting for game data...';
+                    }
+                } else { // online mode
+                    if (wasFinished) return;
+                    drawOnCanvas(dom.peekCanvas, state.boardData, winnerInfo ? winnerInfo.combination : null); 
+                    if (isGameOver) {
                         handlePostMove();
                     }
                 }
@@ -875,7 +927,6 @@
             localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
             closeSettings();
             switchGameMode(state.settings.gameMode);
-            updatePredictionTextUI();
         }
         function loadSettings() {
             const saved = localStorage.getItem('playerZeroSettings');
@@ -905,7 +956,6 @@
             dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
             dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
             switchGameMode(state.settings.gameMode, true);
-            updatePredictionTextUI();
         }
         
         // --- PWA & Initialization ---
@@ -951,6 +1001,14 @@
             });
             dom.modeOnlineBtn.addEventListener('click', () => toggleTttMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleTttMode('manual'));
+            dom.modeDirectShortcutBtn.addEventListener('click', () => toggleTttMode('directShortcut'));
+
+            dom.directShortcutModeDisplay.addEventListener('click', async () => {
+                if (state.gameFinished && state.settings.tttMode === 'directShortcut') {
+                    await handleBoardClick();
+                    resetTttGame();
+                }
+            });
 
             // RPS Listeners
             dom.rpsModeMagicianBtn.addEventListener('click', () => toggleRpsPlayMode('magicianFirst'));
