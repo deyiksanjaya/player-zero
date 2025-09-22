@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -40,8 +40,7 @@
             position: relative;
             width: 100vw; 
             height: 100vw; 
-            max-width: 450px;
-            max-height: 450px;
+            max-height: 100vh;
             box-sizing: border-box;
             overflow: hidden;
         }
@@ -86,7 +85,7 @@
         .rps-wrapper:hover {
              transform: scale(1.05);
         }
-        /* Style untuk titik putih 1-pixel */
+        /* Style for the 1-pixel white dot */
         .rps-wrapper.has-dot::after {
             content: '';
             position: absolute;
@@ -111,95 +110,103 @@
 </head>
 <body class="w-screen h-screen flex justify-center items-center">
 
-    <!-- Trigger Pengaturan (Tetap tidak terlihat untuk metode sulap) -->
+    <!-- Settings Trigger (Remains invisible for the magic method) -->
     <div id="settings-trigger" class="absolute top-0 right-0 h-20 w-20 z-50 cursor-pointer"></div>
 
-    <!-- Panel Pengaturan (Modal) -->
+    <!-- Settings Panel (Modal) -->
     <div id="settings-panel" class="hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
         <div class="bg-gray-800 border border-gray-700 text-white rounded-xl shadow-lg w-full max-w-sm p-6 space-y-6">
             <div class="flex justify-between items-center">
-                <h2 class="text-xl font-bold">Pengaturan</h2>
-                <button id="close-settings-btn" aria-label="Tutup Pengaturan" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+                <h2 class="text-xl font-bold">Settings</h2>
+                <button id="close-settings-btn" aria-label="Close Settings" class="text-gray-400 hover:text-white text-3xl">&times;</button>
             </div>
 
             <div>
-                <label for="game-mode-select" class="font-medium">Mode Permainan</label>
+                <label for="game-mode-select" class="font-medium">Game Mode</label>
                 <select id="game-mode-select" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                     <option value="TicTacToe">Tic-Tac-Toe</option>
                     <option value="RockPaperScissors">Rock-Paper-Scissors</option>
                 </select>
             </div>
 
-            <!-- Pengaturan Tic-Tac-Toe -->
+            <!-- Tic-Tac-Toe Settings -->
             <div id="tictactoe-settings" class="space-y-4">
                 <div>
-                    <label class="font-medium">Mode Input</label>
+                    <label class="font-medium">Input Mode</label>
                     <div class="mt-2 grid grid-cols-2 gap-2">
-                        <button id="mode-online-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Online">Online</button>
-                        <button id="mode-manual-btn" class="p-2 rounded-md transition-colors" aria-label="Pilih Mode Manual">Manual</button>
+                        <button id="mode-online-btn" class="p-2 rounded-md transition-colors" aria-label="Select Online Mode">Online</button>
+                        <button id="mode-manual-btn" class="p-2 rounded-md transition-colors" aria-label="Select Manual Mode">Manual</button>
                     </div>
                 </div>
                 <div>
-                    <label for="shortcut-name-input" class="font-medium">Nama Shortcut (iOS)</label>
-                    <input type="text" id="shortcut-name-input" placeholder="Contoh: Buka Kamera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                    <label for="shortcut-name-input" class="font-medium">Shortcut Name (iOS)</label>
+                    <input type="text" id="shortcut-name-input" placeholder="E.g., Open Camera" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="prediction-text-input" class="font-medium">Prediction Text</label>
+                    <input type="text" id="prediction-text-input" placeholder="e.g., I predict..." class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                </div>
+                <div>
+                    <label for="result-prefix-input" class="font-medium">Result Prefix Text</label>
+                    <input type="text" id="result-prefix-input" placeholder="e.g., Just as I thought..." class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
                 </div>
             </div>
 
-            <!-- Pengaturan Rock-Paper-Scissors -->
+            <!-- Rock-Paper-Scissors Settings -->
             <div id="rps-settings" class="hidden space-y-4">
                  <div>
-                    <label class="font-medium">Gaya Permainan</label>
+                    <label class="font-medium">Play Style</label>
                      <div class="mt-2 grid grid-cols-3 gap-2 text-sm">
-                        <button id="rps-mode-magician-btn" class="p-2 rounded-md transition-colors">Magician</button>
-                        <button id="rps-mode-spectator-btn" class="p-2 rounded-md transition-colors">Spectator</button>
+                        <button id="rps-mode-magician-btn" class="p-2 rounded-md transition-colors">Magician first</button>
+                        <button id="rps-mode-spectator-btn" class="p-2 rounded-md transition-colors">Spectator first</button>
                         <button id="rps-mode-mirroring-btn" class="p-2 rounded-md transition-colors">Mirroring</button>
                     </div>
                  </div>
                  <div id="rps-rounds-container">
-                    <label for="rps-rounds-input" class="font-medium">Jumlah Ronde (1-5)</label>
+                    <label for="rps-rounds-input" class="font-medium">Number of Rounds (1-5)</label>
                     <input type="number" id="rps-rounds-input" min="1" max="5" value="5" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                 </div>
                  <div id="rps-targets-container" class="space-y-4">
                      <div>
-                        <label for="rps-wins-input" class="font-medium">Target Menang</label>
+                        <label for="rps-wins-input" class="font-medium">Target Wins</label>
                         <input type="number" id="rps-wins-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                      <div>
-                        <label for="rps-loses-input" class="font-medium">Target Kalah</label>
+                        <label for="rps-loses-input" class="font-medium">Target Losses</label>
                         <input type="number" id="rps-loses-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                      <div>
-                        <label for="rps-draws-input" class="font-medium">Target Seri</label>
+                        <label for="rps-draws-input" class="font-medium">Target Draws</label>
                         <input type="number" id="rps-draws-input" min="0" max="5" value="0" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
                  </div>
             </div>
 
             <div class="mt-6 flex justify-end">
-                <button id="save-settings-btn" class="px-5 py-2 bg-blue-600 font-semibold rounded-lg hover:bg-blue-700 transition-colors">Simpan & Tutup</button>
+                <button id="save-settings-btn" class="px-5 py-2 bg-blue-600 font-semibold rounded-lg hover:bg-blue-700 transition-colors">Save & Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Kontainer Game Tic-Tac-Toe -->
+    <!-- Tic-Tac-Toe Game Container -->
     <main id="tictactoe-game">
         <div id="peek-board-container">
             <canvas id="peek-canvas"></canvas>
         </div>
         <div id="slide-wrapper">
             <div id="prediction-slide" class="slide-container text-3xl font-bold text-center">
-                prediksi saya..
+                <span id="prediction-text-display">my prediction..</span>
             </div>
             <div class="slide-container text-2xl font-semibold text-center">
                 <h2 id="result-text" class="px-8"></h2>
             </div>
             <div class="slide-container">
-                <img id="board-image" alt="Papan Permainan Akhir" class="w-full h-full object-contain">
+                <img id="board-image" alt="Final Game Board" class="w-full h-full object-contain">
             </div>
         </div>
     </main>
 
-    <!-- Kontainer Game Rock-Paper-Scissors -->
+    <!-- Rock-Paper-Scissors Game Container -->
     <div id="rps-game" class="hidden flex flex-col items-center justify-center p-6">
         <div id="rps-image-container" class="flex flex-col flex-wrap justify-center gap-8">
             <div id="rock-wrapper" class="rps-wrapper">
@@ -214,16 +221,16 @@
         </div>
     </div>
     
-    <!-- Overlay Fullscreen untuk RPS -->
+    <!-- Fullscreen Overlay for RPS -->
     <div id="rps-fullscreen-overlay" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50 p-4">
         <button id="rps-close-fullscreen" class="absolute top-4 right-6 text-gray-200 text-5xl font-bold hover:text-white shadow-lg">&times;</button>
         <img id="rps-fullscreen-image" src="" alt="Fullscreen Choice" class="w-[512px] h-[512px] object-contain rounded-lg invert">
     </div>
 
 
-    <!-- Notifikasi Update PWA -->
+    <!-- PWA Update Notification -->
     <div id="update-notification" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-green-600 text-white px-5 py-3 rounded-lg shadow-lg">
-        Aplikasi diperbarui. Siap digunakan offline.
+        Application updated. Ready for offline use.
     </div>
 
 
@@ -232,7 +239,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, onValue, set, serverTimestamp as rtdbServerTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // --- Konfigurasi Firebase ---
+        // --- Firebase Configuration ---
         const firebaseConfig = {
             apiKey: "AIzaSyDsnZdGtP-tY1_vstQOidbM3tS-UktY45Y",
             authDomain: "player-zer0.firebaseapp.com",
@@ -243,7 +250,7 @@
             appId: "1:1009636905003:web:f3fafd5f5a693440769a6e"
         };
         
-        // --- Konstanta ---
+        // --- Constants ---
         const WINNING_COMBINATIONS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
         const SWIPE_THRESHOLD = 50;
         const DOUBLE_TAP_TIMEOUT = 300;
@@ -258,7 +265,7 @@
             HAS_DOT: 'has-dot', 
         };
 
-        // --- Elemen DOM ---
+        // --- DOM Elements ---
         const dom = {
             settingsTrigger: document.getElementById('settings-trigger'),
             settingsPanel: document.getElementById('settings-panel'),
@@ -278,6 +285,9 @@
             modeOnlineBtn: document.getElementById('mode-online-btn'),
             modeManualBtn: document.getElementById('mode-manual-btn'),
             shortcutNameInput: document.getElementById('shortcut-name-input'),
+            predictionTextInput: document.getElementById('prediction-text-input'),
+            resultPrefixInput: document.getElementById('result-prefix-input'),
+            predictionTextDisplay: document.getElementById('prediction-text-display'),
             rpsGame: document.getElementById('rps-game'),
             rpsImageContainer: document.getElementById('rps-image-container'),
             rockWrapper: document.getElementById('rock-wrapper'),
@@ -300,12 +310,14 @@
             rpsDrawsInput: document.getElementById('rps-draws-input'),
         };
 
-        // --- State Aplikasi ---
+        // --- Application State ---
         let state = {
             settings: { 
                 gameMode: 'TicTacToe',
                 tttMode: 'online', 
                 tttShortcutName: '',
+                tttPredictionText: 'my prediction..',
+                tttResultPrefix: 'I knew',
                 rpsPlayMode: 'magicianFirst', 
                 rpsRounds: 5,
                 rpsWins: 0,
@@ -336,7 +348,7 @@
         const db = getDatabase(app);
         const auth = getAuth(app);
 
-        // --- Fungsi Helper ---
+        // --- Helper Functions ---
         function debounce(func, wait) {
             let timeout;
             return function executedFunction(...args) {
@@ -346,7 +358,7 @@
             };
         }
 
-        // --- FUNGSI UTAMA PERGANTIAN MODE ---
+        // --- MAIN GAME MODE SWITCHER ---
         function switchGameMode(mode, isInitialLoad = false) {
             state.settings.gameMode = mode;
             if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); state.firebaseUnsubscribe = null; }
@@ -359,23 +371,259 @@
             else initRockPaperScissors(isInitialLoad);
         }
         
-        // --- LOGIKA TIC-TAC-TOE (Disingkat untuk brevity) ---
-        function initTicTacToe(isInitialLoad) { updateSlideDimensions(); toggleTttMode(state.settings.tttMode, isInitialLoad); }
-        function updateSlideDimensions() { /* ... */ }
-        function animateToSlide(slideIndex, duration = 400) { /* ... */ }
-        function drawOnCanvas(canvas, boardData) { /* ... */ }
-        function resetTttGame() { /* ... */ }
-        function checkWinner(board) { /* ... */ }
-        function handlePostMove() { /* ... */ }
-        function startPeeking() { /* ... */ }
-        function stopPeeking() { /* ... */ }
-        function handleManualGesture(deltaX, deltaY) { /* ... */ }
-        async function copyBase64ToClipboard(img) { /* ... */ }
-        function handleTouchStart(e) { /* ... */ }
-        function handleTouchMove(e) { /* ... */ }
-        async function handleTouchEnd(e) { /* ... */ }
-        function handleDoubleTap() { /* ... */ }
-        async function handleBoardClick() { /* ... */ }
+        // --- TIC-TAC-TOE LOGIC ---
+        function initTicTacToe(isInitialLoad) { 
+            updateSlideDimensions(); 
+            toggleTttMode(state.settings.tttMode, isInitialLoad); 
+        }
+
+        function updateSlideDimensions() {
+            state.slideWidth = dom.sliderStage.getBoundingClientRect().width;
+            const slides = dom.slideWrapper.querySelectorAll('.slide-container');
+            slides.forEach(slide => {
+                slide.style.width = `${state.slideWidth}px`;
+            });
+            dom.peekCanvas.width = state.slideWidth;
+            dom.peekCanvas.height = state.slideWidth;
+            animateToSlide(state.currentSlide, 0);
+        }
+
+        function animateToSlide(slideIndex, duration = 400) {
+            state.currentSlide = Math.max(0, Math.min(slideIndex, 2));
+            const totalTranslation = (state.slideWidth * state.currentSlide) + (SLIDE_GAP * state.currentSlide);
+            dom.slideWrapper.style.transition = `transform ${duration}ms ease-in-out`;
+            dom.slideWrapper.style.transform = `translateX(-${totalTranslation}px)`;
+        }
+
+        function drawOnCanvas(canvas, boardData) {
+            const size = canvas.width;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, size, size);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillRect(0, 0, size, size);
+            const cellSize = size / 3;
+            ctx.strokeStyle = '#CBD5E1'; ctx.lineWidth = 6; ctx.beginPath();
+            for (let i = 1; i < 3; i++) {
+                ctx.moveTo(i * cellSize, 0); ctx.lineTo(i * cellSize, size);
+                ctx.moveTo(0, i * cellSize); ctx.lineTo(size, i * cellSize);
+            }
+            ctx.stroke();
+            ctx.font = `bold ${cellSize * 0.7}px Poppins`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            boardData.forEach((value, index) => {
+                if (!value) return;
+                const row = Math.floor(index / 3), col = index % 3;
+                const x = col * cellSize + cellSize / 2, y = row * cellSize + cellSize / 2;
+                ctx.fillStyle = value === 'X' ? '#EF4444' : '#3B82F6';
+                ctx.fillText(value, x, y);
+            });
+        }
+
+        function checkWinner(board) {
+            for (const combination of WINNING_COMBINATIONS) {
+                const [a, b, c] = combination;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
+            }
+            return null;
+        }
+
+        function handlePostMove() {
+            const winner = checkWinner(state.boardData);
+            const isFull = state.boardData.every(cell => cell !== null);
+            if (winner || isFull) {
+                state.gameFinished = true;
+                const prefix = state.settings.tttResultPrefix;
+                const message = winner ? `${prefix}... the winner would be ${winner}` : `${prefix}... the game would end in a draw`;
+                dom.resultText.textContent = message;
+                
+                // Use peekCanvas directly instead of creating a new one
+                drawOnCanvas(dom.peekCanvas, state.boardData);
+                dom.boardImage.src = dom.peekCanvas.toDataURL('image/png');
+                animateToSlide(1);
+            } else {
+                state.currentPlayer = state.currentPlayer === 'X' ? 'O' : 'X';
+            }
+        }
+        
+        function resetTttGame() {
+            state.boardData.fill(null);
+            state.currentPlayer = 'X';
+            state.gameFinished = false;
+            state.swipeGroup = null;
+            dom.resultText.textContent = '';
+            dom.boardImage.src = '';
+            animateToSlide(0, 0);
+            updatePredictionTextUI();
+            if (state.settings.tttMode === 'online') {
+                 const gameRef = ref(db, 'magic-game-state');
+                 set(gameRef, { board: state.boardData, timestamp: rtdbServerTimestamp() });
+            }
+        }
+
+        function startPeeking() {
+            if (state.gameFinished || state.settings.tttMode !== 'manual') return;
+            state.isPeeking = true;
+            drawOnCanvas(dom.peekCanvas, state.boardData);
+            dom.predictionSlide.classList.add(CLASS_NAMES.PEEKING);
+            dom.peekBoardContainer.classList.add(CLASS_NAMES.VISIBLE);
+        }
+
+        function stopPeeking() {
+            if (!state.isPeeking) return;
+            state.isPeeking = false;
+            dom.predictionSlide.classList.remove(CLASS_NAMES.PEEKING);
+            dom.peekBoardContainer.classList.remove(CLASS_NAMES.VISIBLE);
+        }
+
+        function handleManualGesture(deltaX, deltaY) {
+            if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) return;
+            const isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+            const direction = isHorizontal ? (deltaX > 0 ? 'right' : 'left') : (deltaY > 0 ? 'down' : 'up');
+            const gestureMap = {
+                'col-left': { 'up': 0, 'middle': 3, 'down': 6 },
+                'col-right': { 'up': 2, 'middle': 5, 'down': 8 },
+                'row-top': { 'left': 0, 'middle': 1, 'right': 2 },
+                'row-bottom': { 'left': 6, 'middle': 7, 'right': 8 }
+            };
+            if (!state.swipeGroup) {
+                if (direction === 'up') state.swipeGroup = 'row-top';
+                else if (direction === 'down') state.swipeGroup = 'row-bottom';
+                else if (direction === 'left') state.swipeGroup = 'col-left';
+                else if (direction === 'right') state.swipeGroup = 'col-right';
+            } else {
+                let cellIndex = -1;
+                let secondDirection = 'middle';
+                if (state.swipeGroup.startsWith('col')) {
+                    if (direction === 'up') secondDirection = 'up';
+                    else if (direction === 'down') secondDirection = 'down';
+                } else {
+                    if (direction === 'left') secondDirection = 'left';
+                    else if (direction === 'right') secondDirection = 'right';
+                }
+                cellIndex = gestureMap[state.swipeGroup]?.[secondDirection];
+                if (cellIndex !== undefined && state.boardData[cellIndex] === null) {
+                    state.boardData[cellIndex] = state.currentPlayer;
+                    handlePostMove();
+                }
+                state.swipeGroup = null;
+            }
+        }
+
+        async function copyBase64ToClipboard(imageElement) {
+            const base64Data = imageElement.src;
+            if (!base64Data || !base64Data.startsWith('data:image/png')) {
+                console.error("Invalid image data to copy.");
+                return false;
+            }
+            try {
+                await navigator.clipboard.writeText(base64Data);
+                return true;
+            } catch (err) {
+                console.warn("Modern copy method failed, trying fallback:", err);
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = base64Data;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return successful;
+                } catch (fallbackErr) {
+                    console.error("Fallback copy also failed:", fallbackErr);
+                    return false;
+                }
+            }
+        }
+        
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            state.touchStart.x = touch.clientX;
+            state.touchStart.y = touch.clientY;
+            state.isDragging = false;
+            clearTimeout(state.peekTimer);
+            state.peekTimer = setTimeout(startPeeking, HOLD_TO_PEEK_DELAY);
+            if (state.gameFinished) {
+                dom.slideWrapper.style.transition = 'none';
+                const totalTranslation = (state.slideWidth * state.currentSlide) + (SLIDE_GAP * state.currentSlide);
+                state.initialTranslate = -totalTranslation;
+            }
+            const now = Date.now();
+            if (now - state.lastTapTime <= DOUBLE_TAP_TIMEOUT) {
+                handleDoubleTap();
+                state.lastTapTime = 0;
+            } else {
+                state.lastTapTime = now;
+            }
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            clearTimeout(state.peekTimer);
+            if (state.isPeeking) stopPeeking();
+            if (!state.gameFinished) return;
+            const currentX = e.touches[0].clientX;
+            const diffX = currentX - state.touchStart.x;
+            if (Math.abs(diffX) > 10) state.isDragging = true;
+            if (state.isDragging) {
+                dom.slideWrapper.style.transform = `translateX(${state.initialTranslate + diffX}px)`;
+            }
+        }
+
+        async function handleTouchEnd(e) {
+            clearTimeout(state.peekTimer);
+            if (state.isPeeking) {
+                stopPeeking();
+                return;
+            }
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const deltaX = endX - state.touchStart.x;
+            const deltaY = endY - state.touchStart.y;
+            
+            if (state.gameFinished) {
+                if (state.isDragging) {
+                    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+                        if (deltaX < 0) animateToSlide(state.currentSlide + 1);
+                        else animateToSlide(state.currentSlide - 1);
+                    } else {
+                        animateToSlide(state.currentSlide);
+                    }
+                } else if (e.target === dom.boardImage) {
+                    await handleBoardClick();
+                }
+            } else if (state.settings.tttMode === 'manual' && !state.isDragging) {
+                handleManualGesture(deltaX, deltaY);
+            }
+            state.isDragging = false;
+        }
+
+        function handleDoubleTap() {
+            if (state.settings.tttMode === 'online') {
+                resetTttGame();
+                return;
+            }
+            if (state.gameFinished || state.settings.tttMode !== 'manual') return;
+            const middleCell = 4;
+            if (state.boardData[middleCell] === null) {
+                state.boardData[middleCell] = state.currentPlayer;
+                handlePostMove();
+            }
+        }
+
+        async function handleBoardClick() {
+            if (!state.gameFinished) return;
+            const isSuccess = await copyBase64ToClipboard(dom.boardImage);
+            if (isSuccess && state.settings.tttShortcutName) {
+                setTimeout(() => {
+                    window.location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(state.settings.tttShortcutName)}`;
+                }, 100);
+            }
+        }
+        
         function toggleTttMode(newMode, isInitialLoad = false) {
             state.settings.tttMode = newMode; if (!isInitialLoad) resetTttGame();
             if (newMode === 'online') initializeTttFirebaseListener();
@@ -384,20 +632,27 @@
             dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, isOnline); dom.modeOnlineBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isOnline);
             dom.modeManualBtn.classList.toggle(CLASS_NAMES.ACTIVE_BUTTON, !isOnline); dom.modeManualBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, isOnline);
         }
+
         function initializeTttFirebaseListener() {
-            if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); state.firebaseUnsubscribe = null; }
+            if (state.firebaseUnsubscribe) { state.firebaseUnsubscribe(); }
             const gameRef = ref(db, 'magic-game-state');
             state.firebaseUnsubscribe = onValue(gameRef, (snapshot) => {
                 if (!snapshot.exists() || state.gameFinished) return;
                 const gameState = snapshot.val();
                 if (gameState && gameState.board) {
                     for (let i = 0; i < 9; i++) state.boardData[i] = gameState.board[i] || null;
-                    if (checkWinner(state.boardData) || state.boardData.every(cell => cell !== null)) handlePostMove();
+                    
+                    // Always draw the peek canvas to see live updates
+                    drawOnCanvas(dom.peekCanvas, state.boardData); 
+
+                    if (checkWinner(state.boardData) || state.boardData.every(cell => cell !== null)) {
+                        handlePostMove();
+                    }
                 }
             });
         }
         
-        // --- LOGIKA ROCK-PAPER-SCISSORS ---
+        // --- ROCK-PAPER-SCISSORS LOGIC ---
         function initRockPaperScissors(isInitialLoad) {
             resetRpsGame();
             generateRpsPlan();
@@ -414,6 +669,7 @@
             closeRpsFullscreen();
         }
         function generateRpsPlan() {
+            if (state.settings.rpsPlayMode === 'mirroring') return;
             const plan = [];
             for (let i = 0; i < state.settings.rpsWins; i++) plan.push('win');
             for (let i = 0; i < state.settings.rpsLoses; i++) plan.push('lose');
@@ -438,18 +694,15 @@
             
             const currentMode = state.settings.rpsPlayMode;
             
-            // Logika untuk Mirroring
             if (currentMode === 'mirroring') {
                 state.rpsCurrentRound++;
                 dom.rockWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
                 dom.paperWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
                 dom.scissorsWrapper.classList.remove(CLASS_NAMES.HAS_DOT);
                 dom[`${opponentChoice}Wrapper`].classList.add(CLASS_NAMES.HAS_DOT);
-                // Penting: Jangan ubah isRpsFreePlayActive, biarkan tetap true
                 return;
             }
 
-            // Logika untuk Magician dan Spectator
             state.isRpsFreePlayActive = false; 
 
             const desiredOutcome = state.rpsGamePlan[state.rpsCurrentRound];
@@ -500,9 +753,9 @@
             }
 
             if (state.rpsCurrentRound >= state.settings.rpsRounds) {
-                console.log("RPS Game Selesai!");
+                console.log("RPS Game Over!");
                 resetRpsGame(); 
-                if (state.settings.rpsPlayMode !== 'mirroring') generateRpsPlan();
+                generateRpsPlan();
             }
         }
         
@@ -510,7 +763,7 @@
             state.settings.rpsPlayMode = newMode;
             if(!isInitialLoad) {
                  resetRpsGame();
-                 if (newMode !== 'mirroring') generateRpsPlan();
+                 generateRpsPlan();
             }
             
             const isMagician = newMode === 'magicianFirst';
@@ -525,24 +778,32 @@
             dom.rpsModeSpectatorBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isSpectator);
             dom.rpsModeMirroringBtn.classList.toggle(CLASS_NAMES.INACTIVE_BUTTON, !isMirroring);
             
-            // Sembunyikan target menang/kalah jika mode mirroring
             dom.rpsTargetsContainer.classList.toggle(CLASS_NAMES.HIDDEN, isMirroring);
         }
 
-        // --- PENGATURAN & PENYIMPANAN ---
+        // --- SETTINGS & STORAGE ---
         function openSettings() { dom.settingsPanel.classList.remove(CLASS_NAMES.HIDDEN); }
         function closeSettings() { dom.settingsPanel.classList.add(CLASS_NAMES.HIDDEN); }
+        
+        function updatePredictionTextUI() {
+            dom.predictionTextDisplay.textContent = state.settings.tttPredictionText;
+        }
+
         function saveSettings() {
             state.settings.gameMode = dom.gameModeSelect.value;
+            // TTT Settings
             state.settings.tttShortcutName = dom.shortcutNameInput.value.trim();
+            state.settings.tttPredictionText = dom.predictionTextInput.value.trim() || 'my prediction..';
+            state.settings.tttResultPrefix = dom.resultPrefixInput.value.trim() || 'I knew';
             
+            // RPS Settings
             let rounds = parseInt(dom.rpsRoundsInput.value) || 1;
             let wins = parseInt(dom.rpsWinsInput.value) || 0;
             let loses = parseInt(dom.rpsLosesInput.value) || 0;
             let draws = parseInt(dom.rpsDrawsInput.value) || 0;
 
             if (state.settings.rpsPlayMode !== 'mirroring' && (wins + loses + draws > rounds)) {
-                alert("Jumlah target Menang, Kalah, & Seri tidak boleh melebihi Jumlah Ronde."); return;
+                alert("The sum of target Wins, Losses, & Draws cannot exceed the Number of Rounds."); return;
             }
             state.settings.rpsRounds = rounds; state.settings.rpsWins = wins; state.settings.rpsLoses = loses; state.settings.rpsDraws = draws;
             dom.rpsRoundsInput.value = rounds; dom.rpsWinsInput.value = wins; dom.rpsLosesInput.value = loses; dom.rpsDrawsInput.value = draws;
@@ -550,28 +811,63 @@
             localStorage.setItem('playerZeroSettings', JSON.stringify(state.settings));
             closeSettings();
             switchGameMode(state.settings.gameMode);
+            updatePredictionTextUI();
         }
         function loadSettings() {
             const saved = localStorage.getItem('playerZeroSettings');
             if (saved) {
-                const defaults = { gameMode: 'TicTacToe', tttMode: 'online', tttShortcutName: '', rpsPlayMode: 'magicianFirst', rpsRounds: 5, rpsWins: 0, rpsLoses: 0, rpsDraws: 0 };
+                const defaults = { 
+                    gameMode: 'TicTacToe', tttMode: 'online', tttShortcutName: '', 
+                    tttPredictionText: 'my prediction..', tttResultPrefix: 'I knew',
+                    rpsPlayMode: 'magicianFirst', rpsRounds: 5, rpsWins: 0, rpsLoses: 0, rpsDraws: 0 
+                };
                 state.settings = { ...defaults, ...JSON.parse(saved) };
             }
             dom.gameModeSelect.value = state.settings.gameMode;
+            // TTT Settings
             dom.shortcutNameInput.value = state.settings.tttShortcutName || '';
-            dom.rpsRoundsInput.value = state.settings.rpsRounds; dom.rpsWinsInput.value = state.settings.rpsWins;
-            dom.rpsLosesInput.value = state.settings.rpsLoses; dom.rpsDrawsInput.value = state.settings.rpsDraws;
+            dom.predictionTextInput.value = state.settings.tttPredictionText;
+            dom.resultPrefixInput.value = state.settings.tttResultPrefix;
+            // RPS Settings
+            dom.rpsRoundsInput.value = state.settings.rpsRounds; 
+            dom.rpsWinsInput.value = state.settings.rpsWins;
+            dom.rpsLosesInput.value = state.settings.rpsLoses; 
+            dom.rpsDrawsInput.value = state.settings.rpsDraws;
             
             const isTTT = state.settings.gameMode === 'TicTacToe';
             dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
             dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
             switchGameMode(state.settings.gameMode, true);
+            updatePredictionTextUI();
         }
         
-        // --- PWA & Inisialisasi ---
-        function registerServiceWorker() { /* ... */ }
-        function showUpdateNotification() { /* ... */ }
-        function listenForServiceWorkerUpdates() { /* ... */ }
+        // --- PWA & Initialization ---
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').then(registration => {
+                        console.log('SW registered: ', registration);
+                    }).catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+                });
+            }
+        }
+        function showUpdateNotification() {
+            dom.updateNotification.classList.remove('hidden');
+            setTimeout(() => {
+                dom.updateNotification.classList.add('hidden');
+            }, 3000);
+        }
+        function listenForServiceWorkerUpdates() {
+             if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'PWA_UPDATED') {
+                        showUpdateNotification();
+                    }
+                });
+            }
+        }
         function setupEventListeners() {
             dom.sliderStage.addEventListener('touchstart', handleTouchStart, { passive: false });
             dom.sliderStage.addEventListener('touchmove', handleTouchMove, { passive: false });
