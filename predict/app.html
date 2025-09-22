@@ -107,17 +107,6 @@
             cursor: wait;
         }
         
-        /* Style for $winner placeholder highlight */
-        .winner-highlight {
-            background-color: rgba(59, 130, 246, 0.5); /* bg-blue-500 with opacity */
-            border-radius: 3px;
-            padding: 0 2px;
-            color: #ffffff;
-        }
-        /* Make the input caret visible against the transparent text */
-        .caret-white {
-            caret-color: white;
-        }
         .scrollable-input {
             white-space: nowrap;
             overflow-x: auto;
@@ -172,13 +161,9 @@
                 </div>
                 <div>
                     <label for="winner-result-text-input" class="font-medium">Winner Result Text ($winner)</label>
-                    <div class="relative w-full mt-1 bg-gray-700 border border-gray-600 rounded-md">
-                        <div id="winner-highlight-layer" class="absolute inset-0 p-2 pointer-events-none overflow-hidden whitespace-nowrap text-white"></div>
-                        <input type="text" id="winner-result-text-input"
-                               placeholder="e.g., $winner takes the game!"
-                               class="scrollable-input relative z-10 w-full p-2 bg-transparent border-none rounded-md text-transparent caret-white focus:ring-0 focus:outline-none"
-                               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-                    </div>
+                    <input type="text" id="winner-result-text-input"
+                           placeholder="e.g., $winner takes the game!"
+                           class="scrollable-input w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
                 </div>
                  <div>
                     <label for="draw-result-text-input" class="font-medium">Draw Result Text</label>
@@ -321,7 +306,6 @@
             shortcutNameInput: document.getElementById('shortcut-name-input'),
             predictionTextInput: document.getElementById('prediction-text-input'),
             winnerResultTextInput: document.getElementById('winner-result-text-input'),
-            winnerHighlightLayer: document.getElementById('winner-highlight-layer'),
             drawResultTextInput: document.getElementById('draw-result-text-input'),
             predictionTextDisplay: document.getElementById('prediction-text-display'),
             rpsGame: document.getElementById('rps-game'),
@@ -719,9 +703,12 @@
                 if (gameState && gameState.board) {
                     for (let i = 0; i < 9; i++) state.boardData[i] = gameState.board[i] || null;
                     
-                    drawOnCanvas(dom.peekCanvas, state.boardData); 
+                    const winnerInfo = checkWinner(state.boardData);
+                    const isFull = state.boardData.every(cell => cell !== null);
+                    
+                    drawOnCanvas(dom.peekCanvas, state.boardData, winnerInfo ? winnerInfo.combination : null); 
 
-                    if (checkWinner(state.boardData) || state.boardData.every(cell => cell !== null)) {
+                    if (winnerInfo || isFull) {
                         handlePostMove();
                     }
                 }
@@ -865,15 +852,6 @@
             dom.predictionTextDisplay.textContent = state.settings.tttPredictionText;
         }
 
-        function updateWinnerHighlight() {
-            const input = dom.winnerResultTextInput;
-            const layer = dom.winnerHighlightLayer;
-            let content = input.value;
-            content = content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            content = content.replace(/\$winner/g, '<span class="winner-highlight">$winner</span>');
-            layer.innerHTML = content;
-        }
-
         function saveSettings() {
             state.settings.gameMode = dom.gameModeSelect.value;
             // TTT Settings
@@ -928,7 +906,6 @@
             dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
             switchGameMode(state.settings.gameMode, true);
             updatePredictionTextUI();
-            updateWinnerHighlight();
         }
         
         // --- PWA & Initialization ---
@@ -974,13 +951,6 @@
             });
             dom.modeOnlineBtn.addEventListener('click', () => toggleTttMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleTttMode('manual'));
-
-            // TTT text input listener
-            dom.winnerResultTextInput.addEventListener('input', updateWinnerHighlight);
-            dom.winnerResultTextInput.addEventListener('scroll', () => {
-                dom.winnerHighlightLayer.scrollLeft = dom.winnerResultTextInput.scrollLeft;
-            });
-
 
             // RPS Listeners
             dom.rpsModeMagicianBtn.addEventListener('click', () => toggleRpsPlayMode('magicianFirst'));
