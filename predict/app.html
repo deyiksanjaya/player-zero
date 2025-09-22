@@ -76,10 +76,11 @@
         #prediction-slide.peeking { opacity: 0.1; }
         #board-image { cursor: pointer; }
 
-        /* --- RPS Layout & Visual Cues (PERBAIKAN) --- */
+        /* --- RPS Layout & Visual Cues (PERBAIKAN WARNA GLOW) --- */
         .rps-wrapper {
             border-radius: 0.5rem; /* Samakan dengan radius gambar */
-            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.5); /* Default Glow di bawah */
+            /* Mengembalikan warna glow menjadi putih seperti semula */
+            box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.25); /* Default Glow Putih */
             transition: box-shadow 0.4s ease-in-out, transform 0.2s ease;
             cursor: pointer;
         }
@@ -87,7 +88,8 @@
              transform: scale(1.05);
         }
         .rps-wrapper.is-cue {
-             box-shadow: 0 8px 20px -5px rgba(139, 92, 246, 0.2); /* Glow lebih redup untuk petunjuk */
+             /* Glow putih yang lebih redup (intensitas turun) untuk petunjuk */
+             box-shadow: 0 8px 20px -5px rgba(255, 255, 255, 0.1); 
         }
         #rps-image-container img {
             /* Glow dipindahkan ke wrapper, gambar hanya untuk tampilan */
