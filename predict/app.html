@@ -147,8 +147,12 @@
                     <input type="text" id="prediction-text-input" placeholder="e.g., I predict..." class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
                 </div>
                 <div>
-                    <label for="result-prefix-input" class="font-medium">Result Prefix Text</label>
-                    <input type="text" id="result-prefix-input" placeholder="e.g., Just as I thought..." class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                    <label for="winner-result-text-input" class="font-medium">Winner Result Text ($winner)</label>
+                    <input type="text" id="winner-result-text-input" placeholder="e.g., $winner takes the game!" class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
+                </div>
+                 <div>
+                    <label for="draw-result-text-input" class="font-medium">Draw Result Text</label>
+                    <input type="text" id="draw-result-text-input" placeholder="e.g., A classic draw." class="w-full p-2 mt-1 bg-gray-700 border border-gray-600 rounded-md">
                 </div>
             </div>
 
@@ -286,7 +290,8 @@
             modeManualBtn: document.getElementById('mode-manual-btn'),
             shortcutNameInput: document.getElementById('shortcut-name-input'),
             predictionTextInput: document.getElementById('prediction-text-input'),
-            resultPrefixInput: document.getElementById('result-prefix-input'),
+            winnerResultTextInput: document.getElementById('winner-result-text-input'),
+            drawResultTextInput: document.getElementById('draw-result-text-input'),
             predictionTextDisplay: document.getElementById('prediction-text-display'),
             rpsGame: document.getElementById('rps-game'),
             rpsImageContainer: document.getElementById('rps-image-container'),
@@ -317,7 +322,8 @@
                 tttMode: 'online', 
                 tttShortcutName: '',
                 tttPredictionText: 'my prediction..',
-                tttResultPrefix: 'I knew',
+                tttWinnerResultText: 'I knew... $winner would win!',
+                tttDrawText: 'I knew... it would be a draw!',
                 rpsPlayMode: 'magicianFirst', 
                 rpsRounds: 5,
                 rpsWins: 0,
@@ -433,8 +439,12 @@
             const isFull = state.boardData.every(cell => cell !== null);
             if (winner || isFull) {
                 state.gameFinished = true;
-                const prefix = state.settings.tttResultPrefix;
-                const message = winner ? `${prefix}... the winner would be ${winner}` : `${prefix}... the game would end in a draw`;
+                let message;
+                if (winner) {
+                    message = state.settings.tttWinnerResultText.replace('$winner', winner);
+                } else {
+                    message = state.settings.tttDrawText;
+                }
                 dom.resultText.textContent = message;
                 drawOnCanvas(dom.peekCanvas, state.boardData);
                 dom.boardImage.src = dom.peekCanvas.toDataURL('image/png');
@@ -807,7 +817,8 @@
             // TTT Settings
             state.settings.tttShortcutName = dom.shortcutNameInput.value.trim();
             state.settings.tttPredictionText = dom.predictionTextInput.value.trim() || 'my prediction..';
-            state.settings.tttResultPrefix = dom.resultPrefixInput.value.trim() || 'I knew';
+            state.settings.tttWinnerResultText = dom.winnerResultTextInput.value.trim() || 'I knew... $winner would win!';
+            state.settings.tttDrawText = dom.drawResultTextInput.value.trim() || 'I knew... it would be a draw!';
             
             // RPS Settings
             let rounds = parseInt(dom.rpsRoundsInput.value) || 1;
@@ -831,7 +842,9 @@
             if (saved) {
                 const defaults = { 
                     gameMode: 'TicTacToe', tttMode: 'online', tttShortcutName: '', 
-                    tttPredictionText: 'my prediction..', tttResultPrefix: 'I knew',
+                    tttPredictionText: 'my prediction..', 
+                    tttWinnerResultText: 'I knew... $winner would win!',
+                    tttDrawText: 'I knew... it would be a draw!',
                     rpsPlayMode: 'magicianFirst', rpsRounds: 5, rpsWins: 0, rpsLoses: 0, rpsDraws: 0 
                 };
                 state.settings = { ...defaults, ...JSON.parse(saved) };
@@ -840,7 +853,8 @@
             // TTT Settings
             dom.shortcutNameInput.value = state.settings.tttShortcutName || '';
             dom.predictionTextInput.value = state.settings.tttPredictionText;
-            dom.resultPrefixInput.value = state.settings.tttResultPrefix;
+            dom.winnerResultTextInput.value = state.settings.tttWinnerResultText;
+            dom.drawResultTextInput.value = state.settings.tttDrawText;
             // RPS Settings
             dom.rpsRoundsInput.value = state.settings.rpsRounds; 
             dom.rpsWinsInput.value = state.settings.rpsWins;
