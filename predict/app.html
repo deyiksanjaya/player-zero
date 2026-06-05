@@ -212,6 +212,9 @@
                  </div>
             </div>
 
+            <!-- Error Message for Validation -->
+            <p id="settings-error-msg" class="hidden text-red-500 text-sm mt-2 text-center"></p>
+
             <div class="mt-6 flex justify-end">
                 <button id="save-settings-btn" class="px-5 py-2 bg-blue-600 font-semibold rounded-lg hover:bg-blue-700 transition-colors">Save & Close</button>
             </div>
@@ -311,6 +314,7 @@
             settingsPanel: document.getElementById('settings-panel'),
             saveSettingsBtn: document.getElementById('save-settings-btn'),
             closeSettingsBtn: document.getElementById('close-settings-btn'),
+            settingsErrorMsg: document.getElementById('settings-error-msg'),
             updateNotification: document.getElementById('update-notification'),
             gameModeSelect: document.getElementById('game-mode-select'),
             gameViewport: document.getElementById('game-viewport'), // Main container for events
@@ -382,6 +386,7 @@
             currentSlide: 0,
             swipeGroup: null,
             lastTapTime: 0,
+            possibleDoubleTap: false,
             touchStart: { x: 0, y: 0 },
             slideWidth: 0,
             isDragging: false,
@@ -436,11 +441,16 @@
         function initTicTacToe(isInitialLoad) { 
             updateSlideDimensions(); 
             toggleTttMode(state.settings.tttMode, isInitialLoad);
-            updatePredictionTextUI(); // FIX: Ensure text is updated on init
+            updatePredictionTextUI();
         }
 
         function updateSlideDimensions() {
-            state.slideWidth = dom.tttGame.getBoundingClientRect().width;
+            // BUG FIX #4: Prevent slideWidth from being set to 0 when element is hidden
+            const width = dom.tttGame.getBoundingClientRect().width;
+            if (width > 0) {
+                state.slideWidth = width;
+            }
+            
             const slides = dom.slideWrapper.querySelectorAll('.slide-container');
             slides.forEach(slide => {
                 slide.style.width = `${state.slideWidth}px`;
@@ -667,14 +677,10 @@
                 state.initialTranslate = -totalTranslation;
             }
 
-            // Handle double tap
+            // BUG FIX #1: Evaluate double tap timing, execution moved to touchend
             const now = Date.now();
-            if (now - state.lastTapTime <= DOUBLE_TAP_TIMEOUT) {
-                handleDoubleTap();
-                state.lastTapTime = 0; // Reset after double tap
-            } else {
-                state.lastTapTime = now;
-            }
+            state.possibleDoubleTap = (now - state.lastTapTime <= DOUBLE_TAP_TIMEOUT);
+            state.lastTapTime = now;
         }
 
         function handleTouchMove(e) {
@@ -743,18 +749,28 @@
                     }
                 }
                 // Otherwise: small drag in a mode that does not accept it -> snap back / ignore
+                
+                // Ensure double tap is ignored if the user dragged
+                state.possibleDoubleTap = false;
             } else {
                 // --- TAP LOGIC (NOT A DRAG) ---
-                
-                // Tap on board image (in manual/online mode) to copy/run shortcut
-                if (state.gameFinished && currentTttMode !== 'directShortcut' && e.target === dom.boardImage) {
-                    await handleBoardClick();
-                }
-                
-                // Tap in directShortcut mode to run shortcut and reset
-                if (state.gameFinished && currentTttMode === 'directShortcut') {
-                    await handleBoardClick();
-                    resetTttGame();
+
+                // BUG FIX #1: Execute double tap safely knowing it wasn't a drag
+                if (state.possibleDoubleTap) {
+                    handleDoubleTap();
+                    state.possibleDoubleTap = false;
+                    state.lastTapTime = 0; // Reset
+                } else {
+                    // Tap on board image (in manual/online mode) to copy/run shortcut
+                    if (state.gameFinished && currentTttMode !== 'directShortcut' && e.target === dom.boardImage) {
+                        await handleBoardClick();
+                    }
+                    
+                    // Tap in directShortcut mode to run shortcut and reset
+                    if (state.gameFinished && currentTttMode === 'directShortcut') {
+                        await handleBoardClick();
+                        resetTttGame();
+                    }
                 }
             }
 
@@ -868,7 +884,7 @@
         // --- ROCK-PAPER-SCISSORS LOGIC ---
         function initRockPaperScissors(isInitialLoad) {
             resetRpsGame();
-            generateRpsPlan(); // FIX: Ensure plan is generated on every init
+            generateRpsPlan(); // BUG FIX: Ensure plan is generated on every init
             initializeRpsFirebaseListener();
             if(isInitialLoad) toggleRpsPlayMode(state.settings.rpsPlayMode, true);
         }
@@ -906,6 +922,9 @@
             if (state.rpsCurrentRound >= state.settings.rpsRounds) return;
             
             const currentMode = state.settings.rpsPlayMode;
+            
+            // BUG FIX #3: Prevent overwriting data if spectator hasn't clicked yet
+            if (currentMode === 'spectatorFirst' && state.rpsCorrectChoiceForSpectator !== null) return;
             
             if (currentMode === 'mirroring') {
                 state.rpsCurrentRound++;
@@ -996,7 +1015,10 @@
 
         // --- SETTINGS & STORAGE ---
         function openSettings() { dom.settingsPanel.classList.remove(CLASS_NAMES.HIDDEN); }
-        function closeSettings() { dom.settingsPanel.classList.add(CLASS_NAMES.HIDDEN); }
+        function closeSettings() { 
+            dom.settingsPanel.classList.add(CLASS_NAMES.HIDDEN); 
+            dom.settingsErrorMsg.classList.add(CLASS_NAMES.HIDDEN); // Reset error on close
+        }
         
         function updatePredictionTextUI() {
             if (state.settings.tttMode !== 'directShortcut') {
@@ -1015,10 +1037,15 @@
             let loses = parseInt(dom.rpsLosesInput.value) || 0;
             let draws = parseInt(dom.rpsDrawsInput.value) || 0;
 
+            // BUG FIX #5: Provide feedback to user on validation error
             if (state.settings.rpsPlayMode !== 'mirroring' && (wins + loses + draws > rounds)) {
-                // In a real app, use a custom modal instead of alert.
-                console.error("The sum of target Wins, Losses, & Draws cannot exceed the Number of Rounds."); return;
+                dom.settingsErrorMsg.textContent = "The sum of target Wins, Losses, & Draws cannot exceed the Number of Rounds.";
+                dom.settingsErrorMsg.classList.remove(CLASS_NAMES.HIDDEN);
+                return;
             }
+            
+            dom.settingsErrorMsg.classList.add(CLASS_NAMES.HIDDEN); // Hide error if valid
+            
             state.settings.rpsRounds = rounds; state.settings.rpsWins = wins; state.settings.rpsLoses = loses; state.settings.rpsDraws = draws;
             dom.rpsRoundsInput.value = rounds; dom.rpsWinsInput.value = wins; dom.rpsLosesInput.value = loses; dom.rpsDrawsInput.value = draws;
 
@@ -1073,7 +1100,7 @@
             dom.rpsLosesInput.value = state.settings.rpsLoses; 
             dom.rpsDrawsInput.value = state.settings.rpsDraws;
             
-            updateSettingsPanelUI(); // FIX: Sync button styles with loaded state
+            updateSettingsPanelUI(); // Sync button styles with loaded state
         }
         
         // --- PWA & Initialization ---
@@ -1115,13 +1142,10 @@
             dom.closeSettingsBtn.addEventListener('click', closeSettings);
             dom.saveSettingsBtn.addEventListener('click', saveSettings);
             dom.gameModeSelect.addEventListener('change', (e) => {
-                // When game mode changes, we need to update the state and then re-apply logic
+                // When game mode changes, update state and re-apply logic
                 state.settings.gameMode = e.target.value;
                 switchGameMode(state.settings.gameMode);
-                // Also update the settings panel view
-                const isTTT = state.settings.gameMode === 'TicTacToe';
-                dom.tttSettings.classList.toggle(CLASS_NAMES.HIDDEN, !isTTT);
-                dom.rpsSettings.classList.toggle(CLASS_NAMES.HIDDEN, isTTT);
+                // BUG FIX #6: Redundant toggle code removed here
             });
             dom.modeOnlineBtn.addEventListener('click', () => toggleTttMode('online'));
             dom.modeManualBtn.addEventListener('click', () => toggleTttMode('manual'));
@@ -1143,7 +1167,7 @@
         function init() {
             onAuthStateChanged(auth, user => { if (!user) signInAnonymously(auth); });
             loadSettings(); // Step 1: Load data into state, form inputs, and update settings panel visuals.
-            switchGameMode(state.settings.gameMode, true); // Step 2: Initialize the correct game view, which now applies logic correctly.
+            switchGameMode(state.settings.gameMode, true); // Step 2: Initialize the correct game view
             setupEventListeners();
             registerServiceWorker();
             listenForServiceWorkerUpdates();
